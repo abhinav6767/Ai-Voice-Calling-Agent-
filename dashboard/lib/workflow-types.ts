@@ -1,5 +1,5 @@
 // ============================================================================
-// Workflow Automation Types
+// Workflow Automation Types — n8n-parity Edition
 // ============================================================================
 
 // ── Trigger Types ────────────────────────────────────────────────────────────
@@ -13,25 +13,18 @@ export type TriggerType =
   | "form_submitted"
   | "lead_tag_added"
   | "sentiment_detected"
-  | "manual_trigger";
+  | "manual_trigger"
+  | "error_trigger";
 
 export interface TriggerConfig {
-  // new_lead: no extra config needed
-  // call_completed: optional filters
   callDirection?: "inbound" | "outbound" | "any";
-  // scheduled
   cronExpression?: string;
   scheduleDescription?: string;
-  // webhook_received
   webhookPath?: string;
-  // lead_status_changed
   fromStatus?: string;
   toStatus?: string;
-  // form_submitted
   formId?: string;
-  // lead_tag_added
   tagName?: string;
-  // sentiment_detected
   sentimentType?: "positive" | "negative" | "neutral";
 }
 
@@ -40,6 +33,9 @@ export interface TriggerConfig {
 export type ActionType =
   | "send_gmail"
   | "send_whatsapp"
+  | "send_sms"
+  | "send_slack"
+  | "send_telegram"
   | "update_lead_status"
   | "add_tag"
   | "remove_tag"
@@ -49,24 +45,58 @@ export type ActionType =
   | "send_notification"
   | "send_to_sheets"
   | "create_calendar_event"
-  | "wait_delay";
+  | "wait_delay"
+  | "code_node"
+  | "sub_workflow"
+  | "sticky_note"
+  | "hubspot_create_contact"
+  | "salesforce_update"
+  | "airtable_row"
+  | "notion_page"
+  | "send_instagram_dm";
 
 export interface GmailConfig {
-  to: string;       // e.g. "{{lead.email}}" or static email
+  to: string;
   subject: string;
   body: string;
   cc?: string;
   bcc?: string;
+  replyTo?: string;
 }
 
 export interface WhatsAppConfig {
-  phoneNumber: string; // e.g. "{{lead.phone}}" or static number
+  phoneNumber: string;
   message: string;
   mediaUrl?: string;
+  templateName?: string;
+}
+
+export interface SmsConfig {
+  to: string;
+  message: string;
+  from?: string;
+}
+
+export interface SlackConfig {
+  channel: string;
+  message: string;
+  username?: string;
+  iconEmoji?: string;
+}
+
+export interface TelegramConfig {
+  chatId: string;
+  message: string;
+  parseMode?: "Markdown" | "HTML" | "None";
+}
+
+export interface InstagramDmConfig {
+  recipientId: string;
+  message: string;
 }
 
 export interface UpdateLeadStatusConfig {
-  newStatus: string;  // "New" | "Contacted" | "Qualified" | "Interested" | "Converted" | "Lost"
+  newStatus: string;
 }
 
 export interface TagConfig {
@@ -74,8 +104,8 @@ export interface TagConfig {
 }
 
 export interface OutboundCallConfig {
-  phoneNumber: string; // "{{lead.phone}}" or static
-  agentConfig?: string; // reference to an agent config
+  phoneNumber: string;
+  agentConfig?: string;
   message?: string;
 }
 
@@ -83,7 +113,10 @@ export interface HttpWebhookConfig {
   url: string;
   method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
   headers?: Record<string, string>;
-  body?: string; // JSON template string
+  body?: string;
+  authentication?: "none" | "basic" | "bearer" | "oauth2";
+  authToken?: string;
+  timeout?: number;
 }
 
 export interface NoteConfig {
@@ -93,51 +126,149 @@ export interface NoteConfig {
 export interface NotificationConfig {
   channel: "in_app" | "email" | "both";
   message: string;
-  recipient?: string; // email or user id
+  recipient?: string;
 }
 
 export interface GoogleSheetsConfig {
   spreadsheetId: string;
   sheetName: string;
-  rowData: Record<string, string>; // column -> template value
+  operation: "append" | "update" | "get";
+  rowData: Record<string, string>;
 }
 
 export interface CalendarEventConfig {
   title: string;
   description?: string;
   durationMinutes: number;
-  delayFromTrigger?: number; // hours from trigger time
+  delayFromTrigger?: number;
   attendees?: string[];
+  meetingType?: "google_meet" | "zoom" | "in_person";
 }
 
 export interface WaitDelayConfig {
   duration: number;
-  unit: "minutes" | "hours" | "days";
+  unit: "seconds" | "minutes" | "hours" | "days";
 }
 
-// ── Condition Types ──────────────────────────────────────────────────────────
+export interface CodeNodeConfig {
+  language: "javascript" | "python";
+  code: string;
+  // output is whatever the code returns
+}
 
-export type ConditionType =
+export interface SubWorkflowConfig {
+  workflowId: string;
+  waitForCompletion: boolean;
+  passInputData: boolean;
+}
+
+export interface StickyNoteConfig {
+  content: string;
+  color: "yellow" | "blue" | "green" | "pink" | "orange";
+  width: number;
+  height: number;
+}
+
+export interface HubspotConfig {
+  operation: "create" | "update" | "get";
+  properties: Record<string, string>;
+}
+
+export interface AirtableConfig {
+  baseId: string;
+  tableId: string;
+  operation: "create" | "update" | "list";
+  fields: Record<string, string>;
+}
+
+export interface NotionConfig {
+  databaseId: string;
+  operation: "create" | "update";
+  properties: Record<string, string>;
+}
+
+// ── Flow Control Types ────────────────────────────────────────────────────────
+
+export type FlowControlType =
+  | "switch_router"
+  | "merge_items"
+  | "loop_items"
   | "if_else"
   | "filter_by_tag"
   | "check_lead_field"
   | "check_call_count"
   | "check_sentiment";
 
-export interface IfElseConfig {
-  field: string;      // e.g. "lead.city", "lead.status", "call.sentiment"
-  operator: "equals" | "not_equals" | "contains" | "not_contains" | "greater_than" | "less_than" | "is_empty" | "is_not_empty";
+export interface SwitchRule {
+  id: string;
+  label: string;
+  field: string;
+  operator:
+    | "equals"
+    | "not_equals"
+    | "contains"
+    | "not_contains"
+    | "greater_than"
+    | "less_than"
+    | "is_empty"
+    | "is_not_empty"
+    | "regex";
   value: string;
+  outputIndex: number;
+}
+
+export interface SwitchConfig {
+  mode: "rules" | "expression";
+  expression?: string;
+  rules: SwitchRule[];
+  fallthrough: boolean; // send to "fallback" output if no rules match
+}
+
+export interface MergeConfig {
+  mode: "append" | "merge_by_key" | "multiplex" | "wait_all";
+  mergeKey?: string; // field to merge on when mode = merge_by_key
+  inputCount: number; // number of input branches to wait for
+}
+
+export interface LoopConfig {
+  mode: "items" | "batches";
+  batchSize?: number; // for batches mode
+  itemsExpression?: string; // e.g. "{{$json.leads}}"
+}
+
+// ── Condition Types ──────────────────────────────────────────────────────────
+
+export type ConditionType = FlowControlType;
+
+export interface IfElseConfig {
+  field: string;
+  operator:
+    | "equals"
+    | "not_equals"
+    | "contains"
+    | "not_contains"
+    | "greater_than"
+    | "less_than"
+    | "is_empty"
+    | "is_not_empty";
+  value: string;
+  caseSensitive?: boolean;
 }
 
 export interface FilterByTagConfig {
   tagName: string;
-  hasTag: boolean;  // true = must have tag, false = must NOT have tag
+  hasTag: boolean;
 }
 
 export interface CheckLeadFieldConfig {
   field: string;
-  operator: "equals" | "not_equals" | "contains" | "not_contains" | "is_empty" | "is_not_empty";
+  operator:
+    | "equals"
+    | "not_equals"
+    | "contains"
+    | "not_contains"
+    | "is_empty"
+    | "is_not_empty";
   value: string;
 }
 
@@ -156,6 +287,10 @@ export type NodeConfig =
   | TriggerConfig
   | GmailConfig
   | WhatsAppConfig
+  | SmsConfig
+  | SlackConfig
+  | TelegramConfig
+  | InstagramDmConfig
   | UpdateLeadStatusConfig
   | TagConfig
   | OutboundCallConfig
@@ -165,6 +300,15 @@ export type NodeConfig =
   | GoogleSheetsConfig
   | CalendarEventConfig
   | WaitDelayConfig
+  | CodeNodeConfig
+  | SubWorkflowConfig
+  | StickyNoteConfig
+  | HubspotConfig
+  | AirtableConfig
+  | NotionConfig
+  | SwitchConfig
+  | MergeConfig
+  | LoopConfig
   | IfElseConfig
   | FilterByTagConfig
   | CheckLeadFieldConfig
@@ -173,22 +317,25 @@ export type NodeConfig =
 
 // ── Node Types ───────────────────────────────────────────────────────────────
 
-export type NodeCategory = "trigger" | "action" | "condition";
+export type NodeCategory = "trigger" | "action" | "condition" | "flow" | "utility";
 
 export interface WorkflowNode {
   id: string;
-  type: TriggerType | ActionType | ConditionType;
+  type: TriggerType | ActionType | ConditionType | FlowControlType;
   category: NodeCategory;
   label: string;
   config: Record<string, any>;
   position: { x: number; y: number };
+  notes?: string;
+  disabled?: boolean;
+  pinnedData?: any; // for data pinning
 }
 
 export interface WorkflowEdge {
   id: string;
   sourceId: string;
   targetId: string;
-  sourcePort?: "default" | "yes" | "no"; // for condition nodes
+  sourcePort?: "default" | "yes" | "no" | string; // string for switch outputs: "output_0", "output_1", etc.
   label?: string;
 }
 
@@ -203,19 +350,29 @@ export interface Workflow {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
-  industry?: string; // optional label for filtering
+  industry?: string;
+  tags?: string[];
+  errorWorkflowId?: string; // ID of workflow to call on error
+  settings?: {
+    timezone?: string;
+    saveDataSuccessExecution?: "all" | "none";
+    saveDataErrorExecution?: "all" | "none";
+    executionTimeout?: number;
+  };
 }
 
 // ── Node Metadata (for palette rendering) ────────────────────────────────────
 
 export interface NodeMetadata {
-  type: TriggerType | ActionType | ConditionType;
+  type: TriggerType | ActionType | ConditionType | FlowControlType;
   category: NodeCategory;
   label: string;
   description: string;
-  icon: string; // lucide icon name
-  color: string; // accent color
+  icon: string;
+  color: string;
   defaultConfig: Record<string, any>;
+  paletteGroup?: string; // sub-group within category for display
+  badge?: string; // e.g. "New", "Beta", "Pro"
 }
 
 // ── All available node definitions ───────────────────────────────────────────
@@ -225,10 +382,11 @@ export const TRIGGER_NODES: NodeMetadata[] = [
     type: "manual_trigger",
     category: "trigger",
     label: "On Manual Run",
-    description: "Fires when you manually click 'Run Workflow'",
+    description: "Fires when you click 'Run Workflow' manually",
     icon: "Play",
     color: "#3fb950",
     defaultConfig: {},
+    paletteGroup: "Core",
   },
   {
     type: "new_lead",
@@ -238,6 +396,7 @@ export const TRIGGER_NODES: NodeMetadata[] = [
     icon: "UserPlus",
     color: "#3fb950",
     defaultConfig: {},
+    paletteGroup: "CRM",
   },
   {
     type: "call_completed",
@@ -247,6 +406,7 @@ export const TRIGGER_NODES: NodeMetadata[] = [
     icon: "PhoneOff",
     color: "#3fb950",
     defaultConfig: { callDirection: "any" },
+    paletteGroup: "CRM",
   },
   {
     type: "scheduled",
@@ -256,6 +416,7 @@ export const TRIGGER_NODES: NodeMetadata[] = [
     icon: "Clock",
     color: "#3fb950",
     defaultConfig: { cronExpression: "0 9 * * *", scheduleDescription: "Every day at 9:00 AM" },
+    paletteGroup: "Core",
   },
   {
     type: "webhook_received",
@@ -265,6 +426,7 @@ export const TRIGGER_NODES: NodeMetadata[] = [
     icon: "Webhook",
     color: "#3fb950",
     defaultConfig: { webhookPath: "/api/webhook/custom" },
+    paletteGroup: "Core",
   },
   {
     type: "lead_status_changed",
@@ -274,15 +436,17 @@ export const TRIGGER_NODES: NodeMetadata[] = [
     icon: "RefreshCw",
     color: "#3fb950",
     defaultConfig: { fromStatus: "any", toStatus: "any" },
+    paletteGroup: "CRM",
   },
   {
     type: "form_submitted",
     category: "trigger",
     label: "Form Submitted",
-    description: "Fires when a web form or landing page form is submitted",
+    description: "Fires when a web or landing page form is submitted",
     icon: "FileText",
     color: "#3fb950",
     defaultConfig: {},
+    paletteGroup: "Core",
   },
   {
     type: "lead_tag_added",
@@ -292,6 +456,7 @@ export const TRIGGER_NODES: NodeMetadata[] = [
     icon: "Tag",
     color: "#3fb950",
     defaultConfig: { tagName: "" },
+    paletteGroup: "CRM",
   },
   {
     type: "sentiment_detected",
@@ -301,18 +466,70 @@ export const TRIGGER_NODES: NodeMetadata[] = [
     icon: "Heart",
     color: "#3fb950",
     defaultConfig: { sentimentType: "positive" },
+    paletteGroup: "AI",
+  },
+  {
+    type: "error_trigger",
+    category: "trigger",
+    label: "On Error",
+    description: "Fires when another workflow fails — acts as an error handler",
+    icon: "AlertTriangle",
+    color: "#f85149",
+    defaultConfig: {},
+    paletteGroup: "Core",
+    badge: "Handler",
   },
 ];
 
-export const CONDITION_NODES: NodeMetadata[] = [
+export const FLOW_NODES: NodeMetadata[] = [
   {
     type: "if_else",
     category: "condition",
     label: "If / Else",
-    description: "Branch workflow based on a condition",
+    description: "Two-branch router: Yes or No based on a condition",
     icon: "GitBranch",
     color: "#d29922",
     defaultConfig: { field: "lead.city", operator: "equals", value: "" },
+    paletteGroup: "Logic",
+  },
+  {
+    type: "switch_router",
+    category: "condition",
+    label: "Switch (Multi-route)",
+    description: "Route to N different outputs based on rules or an expression",
+    icon: "Shuffle",
+    color: "#d29922",
+    defaultConfig: {
+      mode: "rules",
+      rules: [
+        { id: "r1", label: "Output 1", field: "lead.status", operator: "equals", value: "New", outputIndex: 0 },
+      ],
+      fallthrough: true,
+    },
+    paletteGroup: "Logic",
+    badge: "New",
+  },
+  {
+    type: "merge_items",
+    category: "condition",
+    label: "Merge Branches",
+    description: "Synchronize and combine data from parallel branches",
+    icon: "Combine",
+    color: "#d29922",
+    defaultConfig: { mode: "append", inputCount: 2 },
+    paletteGroup: "Logic",
+    badge: "New",
+  },
+  {
+    type: "loop_items",
+    category: "condition",
+    label: "Loop Over Items",
+    description: "Iterate over an array of items, running subsequent nodes for each",
+    icon: "Repeat",
+    color: "#d29922",
+    defaultConfig: { mode: "items", batchSize: 10, itemsExpression: "{{$json.items}}" },
+    paletteGroup: "Logic",
+    badge: "New",
   },
   {
     type: "filter_by_tag",
@@ -322,6 +539,7 @@ export const CONDITION_NODES: NodeMetadata[] = [
     icon: "Filter",
     color: "#d29922",
     defaultConfig: { tagName: "", hasTag: true },
+    paletteGroup: "Logic",
   },
   {
     type: "check_lead_field",
@@ -331,6 +549,7 @@ export const CONDITION_NODES: NodeMetadata[] = [
     icon: "Search",
     color: "#d29922",
     defaultConfig: { field: "lead.name", operator: "is_not_empty", value: "" },
+    paletteGroup: "Logic",
   },
   {
     type: "check_call_count",
@@ -340,63 +559,150 @@ export const CONDITION_NODES: NodeMetadata[] = [
     icon: "Hash",
     color: "#d29922",
     defaultConfig: { operator: "greater_than", value: 1 },
+    paletteGroup: "Logic",
   },
   {
     type: "check_sentiment",
     category: "condition",
     label: "Check Sentiment",
-    description: "Branch based on the call sentiment analysis",
+    description: "Branch based on the call sentiment analysis result",
     icon: "Smile",
     color: "#d29922",
     defaultConfig: { sentiment: "positive" },
+    paletteGroup: "Logic",
   },
 ];
 
 export const ACTION_NODES: NodeMetadata[] = [
+  // ── Code / Transform ──────────────────────────────────────
+  {
+    type: "code_node",
+    category: "action",
+    label: "Code",
+    description: "Run custom JavaScript to transform or process data",
+    icon: "Code2",
+    color: "#7c3aed",
+    defaultConfig: {
+      language: "javascript",
+      code: `// Input data is available as $input
+// Return transformed items as an array
+const items = $input.all();
+
+return items.map(item => ({
+  ...item.json,
+  processed: true,
+  timestamp: new Date().toISOString()
+}));`,
+    },
+    paletteGroup: "Core",
+    badge: "New",
+  },
+  {
+    type: "sub_workflow",
+    category: "action",
+    label: "Execute Workflow",
+    description: "Call another workflow and optionally wait for its result",
+    icon: "Workflow",
+    color: "#7c3aed",
+    defaultConfig: { workflowId: "", waitForCompletion: true, passInputData: true },
+    paletteGroup: "Core",
+    badge: "New",
+  },
+  // ── Messaging ─────────────────────────────────────────────
   {
     type: "send_gmail",
     category: "action",
     label: "Send Gmail",
-    description: "Send an email via Gmail",
+    description: "Send a personalized email via Gmail",
     icon: "Mail",
-    color: "#2f81f7",
-    defaultConfig: { to: "{{lead.email}}", subject: "", body: "" },
+    color: "#ea4335",
+    defaultConfig: { to: "{{$json.lead.email}}", subject: "", body: "", cc: "", bcc: "" },
+    paletteGroup: "Messaging",
   },
   {
     type: "send_whatsapp",
     category: "action",
     label: "Send WhatsApp",
-    description: "Send a WhatsApp message",
+    description: "Send a WhatsApp message via Meta Cloud API",
     icon: "MessageCircle",
     color: "#25d366",
-    defaultConfig: { phoneNumber: "{{lead.phone}}", message: "" },
+    defaultConfig: { phoneNumber: "{{$json.lead.phone}}", message: "", mediaUrl: "" },
+    paletteGroup: "Messaging",
   },
+  {
+    type: "send_sms",
+    category: "action",
+    label: "Send SMS",
+    description: "Send an SMS via Twilio or similar provider",
+    icon: "Smartphone",
+    color: "#f59e0b",
+    defaultConfig: { to: "{{$json.lead.phone}}", message: "" },
+    paletteGroup: "Messaging",
+    badge: "New",
+  },
+  {
+    type: "send_slack",
+    category: "action",
+    label: "Send Slack Message",
+    description: "Post a message to a Slack channel or DM",
+    icon: "MessageSquare",
+    color: "#4a154b",
+    defaultConfig: { channel: "#general", message: "" },
+    paletteGroup: "Messaging",
+    badge: "New",
+  },
+  {
+    type: "send_telegram",
+    category: "action",
+    label: "Send Telegram",
+    description: "Send a Telegram message to a user or group",
+    icon: "Send",
+    color: "#26a5e4",
+    defaultConfig: { chatId: "", message: "", parseMode: "Markdown" },
+    paletteGroup: "Messaging",
+    badge: "New",
+  },
+  {
+    type: "send_instagram_dm",
+    category: "action",
+    label: "Send Instagram DM",
+    description: "Send a direct message via Instagram Business API",
+    icon: "Instagram",
+    color: "#e1306c",
+    defaultConfig: { recipientId: "", message: "" },
+    paletteGroup: "Messaging",
+    badge: "New",
+  },
+  // ── CRM ───────────────────────────────────────────────────
   {
     type: "update_lead_status",
     category: "action",
     label: "Update Lead Status",
-    description: "Change the lead's status in CRM",
+    description: "Change the lead's status in the CRM",
     icon: "UserCheck",
     color: "#2f81f7",
     defaultConfig: { newStatus: "Contacted" },
+    paletteGroup: "CRM",
   },
   {
     type: "add_tag",
     category: "action",
     label: "Add Tag",
-    description: "Add a tag/label to the lead",
+    description: "Add a tag/label to a lead",
     icon: "TagIcon",
     color: "#2f81f7",
     defaultConfig: { tagName: "" },
+    paletteGroup: "CRM",
   },
   {
     type: "remove_tag",
     category: "action",
     label: "Remove Tag",
-    description: "Remove a tag/label from the lead",
+    description: "Remove a tag/label from a lead",
     icon: "XCircle",
     color: "#2f81f7",
     defaultConfig: { tagName: "" },
+    paletteGroup: "CRM",
   },
   {
     type: "trigger_outbound_call",
@@ -405,25 +711,93 @@ export const ACTION_NODES: NodeMetadata[] = [
     description: "Initiate an AI-powered outbound call",
     icon: "PhoneOutgoing",
     color: "#2f81f7",
-    defaultConfig: { phoneNumber: "{{lead.phone}}", message: "" },
-  },
-  {
-    type: "http_webhook",
-    category: "action",
-    label: "HTTP Webhook",
-    description: "Send data to an external URL",
-    icon: "Globe",
-    color: "#8b5cf6",
-    defaultConfig: { url: "", method: "POST", body: "" },
+    defaultConfig: { phoneNumber: "{{$json.lead.phone}}", message: "" },
+    paletteGroup: "CRM",
   },
   {
     type: "add_note",
     category: "action",
     label: "Add Note to Lead",
-    description: "Attach a note or comment to the lead",
+    description: "Attach a note or comment to the lead record",
     icon: "StickyNote",
     color: "#2f81f7",
     defaultConfig: { noteText: "" },
+    paletteGroup: "CRM",
+  },
+  {
+    type: "hubspot_create_contact",
+    category: "action",
+    label: "HubSpot — Create/Update Contact",
+    description: "Create or update a contact in HubSpot CRM",
+    icon: "Building2",
+    color: "#ff5c35",
+    defaultConfig: { operation: "create", properties: { email: "{{$json.lead.email}}", firstname: "{{$json.lead.name}}" } },
+    paletteGroup: "CRM",
+    badge: "New",
+  },
+  {
+    type: "salesforce_update",
+    category: "action",
+    label: "Salesforce — Update Record",
+    description: "Create or update a record in Salesforce",
+    icon: "Cloud",
+    color: "#00a1e0",
+    defaultConfig: { operation: "update", properties: {} },
+    paletteGroup: "CRM",
+    badge: "New",
+  },
+  // ── Productivity ──────────────────────────────────────────
+  {
+    type: "http_webhook",
+    category: "action",
+    label: "HTTP Request",
+    description: "Make an HTTP request to any external API",
+    icon: "Globe",
+    color: "#8b5cf6",
+    defaultConfig: { url: "", method: "POST", body: "", authentication: "none", headers: {} },
+    paletteGroup: "Core",
+  },
+  {
+    type: "send_to_sheets",
+    category: "action",
+    label: "Google Sheets — Append Row",
+    description: "Append lead data to a Google Sheet",
+    icon: "Sheet",
+    color: "#34a853",
+    defaultConfig: { spreadsheetId: "", sheetName: "Sheet1", operation: "append", rowData: {} },
+    paletteGroup: "Productivity",
+  },
+  {
+    type: "create_calendar_event",
+    category: "action",
+    label: "Google Calendar — Create Event",
+    description: "Create a Google Calendar event for follow-up",
+    icon: "Calendar",
+    color: "#2f81f7",
+    defaultConfig: { title: "", durationMinutes: 30, delayFromTrigger: 24, meetingType: "google_meet" },
+    paletteGroup: "Productivity",
+  },
+  {
+    type: "airtable_row",
+    category: "action",
+    label: "Airtable — Add Row",
+    description: "Create or update a record in Airtable",
+    icon: "Table2",
+    color: "#ff6b2b",
+    defaultConfig: { baseId: "", tableId: "", operation: "create", fields: {} },
+    paletteGroup: "Productivity",
+    badge: "New",
+  },
+  {
+    type: "notion_page",
+    category: "action",
+    label: "Notion — Create Page",
+    description: "Create or update a page in a Notion database",
+    icon: "FileCode2",
+    color: "#000000",
+    defaultConfig: { databaseId: "", operation: "create", properties: {} },
+    paletteGroup: "Productivity",
+    badge: "New",
   },
   {
     type: "send_notification",
@@ -433,25 +807,9 @@ export const ACTION_NODES: NodeMetadata[] = [
     icon: "Bell",
     color: "#2f81f7",
     defaultConfig: { channel: "in_app", message: "" },
+    paletteGroup: "Core",
   },
-  {
-    type: "send_to_sheets",
-    category: "action",
-    label: "Send to Google Sheets",
-    description: "Append lead data to a Google Sheet",
-    icon: "Sheet",
-    color: "#34a853",
-    defaultConfig: { spreadsheetId: "", sheetName: "Sheet1", rowData: {} },
-  },
-  {
-    type: "create_calendar_event",
-    category: "action",
-    label: "Create Calendar Event",
-    description: "Create a Google Calendar event for follow-up",
-    icon: "Calendar",
-    color: "#2f81f7",
-    defaultConfig: { title: "", durationMinutes: 30, delayFromTrigger: 24 },
-  },
+  // ── Utilities ─────────────────────────────────────────────
   {
     type: "wait_delay",
     category: "action",
@@ -460,15 +818,104 @@ export const ACTION_NODES: NodeMetadata[] = [
     icon: "Timer",
     color: "#8b949e",
     defaultConfig: { duration: 1, unit: "hours" },
+    paletteGroup: "Utilities",
+  },
+  {
+    type: "sticky_note",
+    category: "utility",
+    label: "Sticky Note",
+    description: "Add an annotation or comment to the canvas",
+    icon: "StickyNote",
+    color: "#f59e0b",
+    defaultConfig: { content: "Add your note here...", color: "yellow", width: 200, height: 120 },
+    paletteGroup: "Utilities",
   },
 ];
 
+// Legacy alias for backwards compatibility
+export const CONDITION_NODES = FLOW_NODES;
+
 export const ALL_NODE_METADATA: NodeMetadata[] = [
   ...TRIGGER_NODES,
-  ...CONDITION_NODES,
+  ...FLOW_NODES,
   ...ACTION_NODES,
 ];
 
 export function getNodeMetadata(type: string): NodeMetadata | undefined {
   return ALL_NODE_METADATA.find((n) => n.type === type);
+}
+
+// ── Palette Groups for UI ─────────────────────────────────────────────────────
+
+export interface PaletteSection {
+  id: string;
+  title: string;
+  accent: string;
+  nodes: NodeMetadata[];
+}
+
+export function buildPaletteSections(filter?: string): PaletteSection[] {
+  const query = filter?.toLowerCase().trim() || "";
+
+  const allNodes = ALL_NODE_METADATA.filter((n) => {
+    if (!query) return true;
+    return (
+      n.label.toLowerCase().includes(query) ||
+      n.description.toLowerCase().includes(query) ||
+      n.type.toLowerCase().includes(query) ||
+      (n.paletteGroup?.toLowerCase().includes(query) ?? false)
+    );
+  });
+
+  if (query) {
+    // Flat search results — single section
+    return [{ id: "results", title: `Results (${allNodes.length})`, accent: "#2f81f7", nodes: allNodes }];
+  }
+
+  return [
+    {
+      id: "triggers",
+      title: "Triggers",
+      accent: "#3fb950",
+      nodes: allNodes.filter((n) => n.category === "trigger"),
+    },
+    {
+      id: "flow",
+      title: "Flow Control",
+      accent: "#d29922",
+      nodes: allNodes.filter((n) => ["condition", "flow"].includes(n.category)),
+    },
+    {
+      id: "messaging",
+      title: "Messaging",
+      accent: "#25d366",
+      nodes: allNodes.filter((n) => n.paletteGroup === "Messaging"),
+    },
+    {
+      id: "crm",
+      title: "CRM & Leads",
+      accent: "#2f81f7",
+      nodes: allNodes.filter((n) => n.paletteGroup === "CRM"),
+    },
+    {
+      id: "productivity",
+      title: "Productivity",
+      accent: "#34a853",
+      nodes: allNodes.filter((n) => n.paletteGroup === "Productivity"),
+    },
+    {
+      id: "core",
+      title: "Core / HTTP",
+      accent: "#8b5cf6",
+      nodes: allNodes.filter(
+        (n) => n.paletteGroup === "Core" && n.category !== "trigger"
+      ),
+    },
+    {
+      id: "utilities",
+      title: "Utilities",
+      accent: "#8b949e",
+      nodes: allNodes.filter((n) => n.paletteGroup === "Utilities"),
+    },
+  ].filter((s) => s.nodes.length > 0);
 }
