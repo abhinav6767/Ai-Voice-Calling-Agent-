@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useRef, Suspense } from "react";
+import React, { useState, useEffect, useCallback, useRef, Suspense, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   ArrowLeft, Save, Play, Pause, PanelLeftClose, PanelLeft, History,
@@ -12,6 +12,8 @@ import { resolveConfigTemplates, evaluateSwitchRule, executeCodeNode } from "@/l
 import WorkflowCanvas from "@/components/workflows/WorkflowCanvas";
 import WorkflowNodePalette from "@/components/workflows/WorkflowNodePalette";
 import WorkflowNodeConfigPanel from "@/components/workflows/WorkflowNodeConfigPanel";
+import { useCopilotContext } from "@/components/copilot/CopilotContext";
+import { validateAllNodes } from "@/lib/workflow-validation";
 
 // Lazy import AI generate modal
 const AiGenerateModalLazy = React.lazy(() => import("@/components/workflows/AiGenerateModal"));
@@ -40,11 +42,11 @@ const DEMO_LEAD = {
 };
 
 // ── Build execution output per node type ────────────────────────────────────────
-function buildNodeOutput(
+async function buildNodeOutput(
   node: WorkflowNode,
   input: any,
   nodeOutputMap: Record<string, any>
-): { output: any; status: "success" | "error"; error?: string; executionMs: number } {
+): Promise<{ output: any; status: "success" | "error"; error?: string; executionMs: number }> {
   const start = performance.now();
 
   // Resolve template expressions in config
@@ -199,17 +201,64 @@ function buildNodeOutput(
         break;
 
       // ── Messaging ─────────────────────────────────────────────
-      case "send_gmail":
-        output = {
-          success: true,
-          messageId: `gmail_msg_${Math.random().toString(36).substring(2, 10)}`,
-          sentTo: resolvedConfig.to || input.lead?.email || "unknown@example.com",
-          subject: resolvedConfig.subject || "No subject",
-          bodyPreview: (resolvedConfig.body || "").substring(0, 100) + (resolvedConfig.body?.length > 100 ? "..." : ""),
-          provider: "gmail_api",
-          timestamp: new Date().toISOString()
-        };
+      case "send_gmail": {
+        const sentTo = resolvedConfig.to || input.lead?.email || "unknown@example.com";
+        const subject = resolvedConfig.subject || "No subject";
+        const body = resolvedConfig.body || "No content";
+        
+        let accessToken = "";
+        let refreshToken = "";
+        try {
+          const creds = localStorage.getItem("rapidx_credentials");
+          if (creds) {
+            const parsed = JSON.parse(creds);
+            accessToken = parsed.gmail?.access_token || parsed.gmail?.accessToken || "";
+            refreshToken = parsed.gmail?.refresh_token || parsed.gmail?.refreshToken || "";
+          }
+        } catch (e) {}
+
+        if (!accessToken) {
+           return { output: null, status: "error", error: "Gmail not connected. Please connect via Integrations.", executionMs: Math.round(performance.now() - start) };
+        }
+
+        try {
+          const res = await fetch("/api/send-email", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              to: sentTo,
+              subject,
+              body,
+              accessToken,
+              refreshToken
+            })
+          });
+          const data = await res.json();
+          if (!res.ok) {
+             return { output: null, status: "error", error: data.error || "Failed to send email", executionMs: Math.round(performance.now() - start) };
+          }
+          output = {
+            success: true,
+            messageId: data.messageId,
+            sentTo,
+            subject,
+            bodyPreview: body.substring(0, 100) + (body.length > 100 ? "..." : ""),
+            provider: "gmail_api",
+            timestamp: new Date().toISOString()
+          };
+          
+          if (data.newAccessToken) {
+            try {
+              const creds = JSON.parse(localStorage.getItem("rapidx_credentials") || "{}");
+              if (creds.gmail) creds.gmail.accessToken = data.newAccessToken;
+              localStorage.setItem("rapidx_credentials", JSON.stringify(creds));
+            } catch (e) {}
+          }
+        } catch (err: any) {
+           return { output: null, status: "error", error: err.message, executionMs: Math.round(performance.now() - start) };
+        }
         break;
+      }
 
       case "send_whatsapp":
         output = {
@@ -436,8 +485,33 @@ function BuilderContent() {
   const [jsonModalMode, setJsonModalMode] = useState<"export" | "import">("export");
   const [importJsonText, setImportJsonText] = useState("");
   const [importError, setImportError] = useState("");
+  const [showSuccessAnim, setShowSuccessAnim] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const { setCopilotContext } = useCopilotContext();
+
+  // ── Node validation (runs on every nodes/edges change) ────────────────────
+  const nodeValidations = useMemo(
+    () => validateAllNodes(nodes, edges),
+    [nodes, edges]
+  );
+
+  const totalIssues = Object.values(nodeValidations).reduce(
+    (acc, v) => acc + v.errors.length + v.warnings.length,
+    0
+  );
+
+  // Sync state to copilot
+  useEffect(() => {
+    setCopilotContext("Workflow Builder", {
+      workflowName,
+      nodesCount: nodes.length,
+      edgesCount: edges.length,
+      selectedNodeId,
+      isActive
+    });
+  }, [workflowName, nodes, edges, selectedNodeId, isActive, setCopilotContext]);
 
   // Load existing workflow
   useEffect(() => {
@@ -634,7 +708,7 @@ function BuilderContent() {
       await new Promise((resolve) => setTimeout(resolve, 600 + Math.random() * 400));
 
       const input = parentOutput || { lead: { ...DEMO_LEAD } };
-      const { output, status, error, executionMs } = buildNodeOutput(node, input, nodeOutputMap);
+      const { output, status, error, executionMs } = await buildNodeOutput(node, input, nodeOutputMap);
 
       if (status === "error") overallStatus = "error";
 
@@ -667,6 +741,11 @@ function BuilderContent() {
     }
 
     setIsExecuting(false);
+
+    if (overallStatus === "success") {
+      setShowSuccessAnim(true);
+      setTimeout(() => setShowSuccessAnim(false), 4000);
+    }
 
     setExecutions((prev) =>
       prev.map((exec) =>
@@ -760,7 +839,22 @@ function BuilderContent() {
   }
 
   return (
-    <div className="h-full flex flex-col -m-8 overflow-hidden">
+    <div className="h-full flex flex-col -m-8 overflow-hidden relative">
+      {showSuccessAnim && (
+        <div className="absolute top-16 left-1/2 -translate-x-1/2 z-[100] flex flex-col items-center justify-center pointer-events-none">
+          <div className="bg-white dark:bg-[#161b22] px-6 py-4 rounded-2xl shadow-[0_10px_40px_rgba(34,197,94,0.2)] border border-green-500/30 flex items-center gap-4 animate-in fade-in slide-in-from-top-8 zoom-in-75 duration-500 fill-mode-forwards" style={{ animationTimingFunction: "cubic-bezier(0.175, 0.885, 0.32, 1.275)" }}>
+            <div className="w-12 h-12 rounded-full bg-green-500 text-white flex items-center justify-center animate-in zoom-in-0 spin-in-180 duration-500 delay-150 fill-mode-both" style={{ animationTimingFunction: "cubic-bezier(0.34, 1.56, 0.64, 1)" }}>
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth={4} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-gray-900 dark:text-white">Workflow Completed!</h3>
+              <p className="text-xs text-green-600 dark:text-green-400 font-medium">All actions executed successfully</p>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Top toolbar */}
       <div className="h-14 border-b border-gray-200 dark:border-[#30363d] bg-white dark:bg-[#161b22] flex items-center justify-between px-3 flex-shrink-0 transition-colors duration-200 gap-2">
         <div className="flex items-center gap-2 min-w-0">
@@ -791,6 +885,17 @@ function BuilderContent() {
         </div>
 
         <div className="flex items-center gap-1.5 flex-shrink-0">
+          {/* Validation summary badge */}
+          {totalIssues > 0 && (
+            <div
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold border bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-500/20"
+              title={`${totalIssues} issue${totalIssues > 1 ? "s" : ""} found — hover nodes to see details`}
+            >
+              <span>⚠</span>
+              <span className="hidden sm:inline">{totalIssues} issue{totalIssues > 1 ? "s" : ""}</span>
+            </div>
+          )}
+
           {/* AI Generate */}
           <button
             onClick={() => setShowAiModal(true)}
@@ -924,6 +1029,7 @@ function BuilderContent() {
           onAddEdge={handleAddEdge}
           onDeleteEdge={handleDeleteEdge}
           nodeExecutionStatuses={nodeExecutionStatuses}
+          nodeValidations={nodeValidations}
         />
 
         {/* Right panel: config or executions */}

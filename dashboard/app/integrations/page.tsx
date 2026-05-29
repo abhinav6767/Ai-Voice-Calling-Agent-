@@ -1,9 +1,11 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   Mail, MessageCircle, Instagram, Key, Check, Plus, AlertCircle, 
-  Eye, EyeOff, Trash2, HelpCircle, Save, ExternalLink, Settings, Sparkles, X, Loader2
+  Eye, EyeOff, Trash2, HelpCircle, Save, ExternalLink, Settings, Sparkles, X, Loader2,
+  CheckCircle2, ShieldCheck,
 } from "lucide-react";
 
 interface Integration {
@@ -25,13 +27,43 @@ interface Integration {
 }
 
 export default function IntegrationsPage() {
+  const searchParams = useSearchParams();
   const [integrations, setIntegrations] = useState<Integration[]>([]);
   const [activeIntegration, setActiveIntegration] = useState<Integration | null>(null);
   const [showConfigModal, setShowConfigModal] = useState(false);
   const [savedConfigs, setSavedConfigs] = useState<Record<string, Record<string, string>>>({});
   const [formData, setFormData] = useState<Record<string, string>>({});
   const [showPassword, setShowPassword] = useState<Record<string, boolean>>({});
-  const [authenticatingGmail, setAuthenticatingGmail] = useState(false);
+  const [gmailSuccess, setGmailSuccess] = useState(false);
+
+  // Handle Gmail OAuth callback — read token data from URL params
+  useEffect(() => {
+    const success = searchParams.get("gmail_success");
+    const dataParam = searchParams.get("gmail_data");
+    const errorParam = searchParams.get("gmail_error");
+
+    if (success === "1" && dataParam) {
+      try {
+        const gmailData = JSON.parse(decodeURIComponent(dataParam));
+        const saved = localStorage.getItem("rapidx_credentials");
+        const existing: Record<string, Record<string, string>> = saved ? JSON.parse(saved) : {};
+        const updated = { ...existing, gmail: gmailData };
+        localStorage.setItem("rapidx_credentials", JSON.stringify(updated));
+        setSavedConfigs(updated);
+        setGmailSuccess(true);
+        setTimeout(() => setGmailSuccess(false), 4000);
+        // Clean up URL params
+        window.history.replaceState({}, "", "/integrations");
+      } catch (e) {
+        console.error("Failed to parse Gmail OAuth data", e);
+      }
+    }
+
+    if (errorParam) {
+      console.error("Gmail OAuth error:", errorParam);
+      window.history.replaceState({}, "", "/integrations");
+    }
+  }, [searchParams]);
 
   // Initialize integrations list and load saved credentials from localStorage
   useEffect(() => {
@@ -134,30 +166,20 @@ export default function IntegrationsPage() {
     localStorage.setItem("rapidx_credentials", JSON.stringify(newConfigs));
   };
 
-  const handleGmailOAuth = async () => {
-    if (authenticatingGmail) return;
-    setAuthenticatingGmail(true);
-
-    // Simulate standard Google OAuth popup window
-    setTimeout(() => {
-      const emailMock = "abhinav.calling.agent@gmail.com";
-      const newConfigs = {
-        ...savedConfigs,
-        gmail: {
-          email: emailMock,
-          status: "connected",
-          authTime: new Date().toISOString()
-        }
-      };
-
-      setSavedConfigs(newConfigs);
-      localStorage.setItem("rapidx_credentials", JSON.stringify(newConfigs));
-      setAuthenticatingGmail(false);
-    }, 1500);
+  const handleGmailOAuth = () => {
+    // Redirect to our OAuth start route which redirects to Google
+    window.location.href = "/api/auth/gmail/start";
   };
 
   return (
     <div className="space-y-8 max-w-6xl mx-auto">
+      {/* Success toast */}
+      {gmailSuccess && (
+        <div className="fixed top-4 right-4 z-50 flex items-center gap-3 px-4 py-3 rounded-xl bg-green-50 dark:bg-green-500/15 border border-green-200 dark:border-green-500/30 shadow-xl text-green-700 dark:text-green-400 text-sm font-medium animate-in slide-in-from-right">
+          <CheckCircle2 className="w-4 h-4" />
+          Gmail connected successfully!
+        </div>
+      )}
       {/* Title */}
       <div>
         <h2 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-[#e6edf3]">
@@ -177,10 +199,10 @@ export default function IntegrationsPage() {
           return (
             <div
               key={item.id}
-              className={`group flex flex-col justify-between p-5 rounded-2xl border bg-white dark:bg-[#161b22] hover:shadow-lg dark:hover:shadow-[0_8px_30px_rgba(0,0,0,0.3)] transition-all duration-300 ${
+              className={`group flex flex-col justify-between p-5 rounded-2xl border bg-white/80 dark:bg-[#161b22]/60 backdrop-blur-md hover:shadow-xl dark:hover:shadow-[0_8px_30px_rgba(0,0,0,0.25)] transition-all duration-300 ${
                 isConnected
-                  ? "border-green-500/20 dark:border-green-500/20 shadow-[0_4px_20px_rgba(34,197,94,0.02)]"
-                  : "border-gray-200 dark:border-[#30363d] hover:border-gray-300 dark:hover:border-[#484f58]"
+                  ? "border-green-500/20 dark:border-green-400/15 shadow-[0_4px_20px_rgba(34,197,94,0.04)]"
+                  : "border-gray-200/50 dark:border-white/8 hover:border-gray-300/60 dark:hover:border-white/12"
               }`}
             >
               <div>
@@ -229,30 +251,49 @@ export default function IntegrationsPage() {
 
                 {/* Saved configs detail (if connected) */}
                 {isConnected && (
-                  <div className="mt-4 p-3 rounded-lg bg-gray-50 dark:bg-[#0d1117] border border-gray-150 dark:border-[#21262d] text-[11px] font-mono text-gray-500 dark:text-[#8b949e] space-y-1">
+                  <div className="mt-4 p-3 rounded-lg bg-gray-50 dark:bg-[#0d1117] border border-gray-150 dark:border-[#21262d]">
                     {item.id === "gmail" ? (
-                      <div className="flex items-center justify-between">
-                        <span>Authorized user:</span>
-                        <span className="text-[#2f81f7] truncate">
-                          {savedConfigs.gmail.email}
-                        </span>
+                      <div className="flex items-center gap-3">
+                        {savedConfigs.gmail?.picture ? (
+                          <img
+                            src={savedConfigs.gmail.picture}
+                            alt="Google account"
+                            className="w-9 h-9 rounded-full border-2 border-green-500/30 flex-shrink-0"
+                          />
+                        ) : (
+                          <div className="w-9 h-9 rounded-full bg-[#ea4335]/10 border border-[#ea4335]/20 flex items-center justify-center flex-shrink-0">
+                            <Mail className="w-4 h-4 text-[#ea4335]" />
+                          </div>
+                        )}
+                        <div className="min-w-0">
+                          <p className="text-xs font-semibold text-gray-900 dark:text-[#e6edf3] truncate">
+                            {savedConfigs.gmail?.name || "Google Account"}
+                          </p>
+                          <p className="text-[11px] text-[#2f81f7] truncate font-mono">
+                            {savedConfigs.gmail?.email}
+                          </p>
+                        </div>
+                        <ShieldCheck className="w-4 h-4 text-green-500 flex-shrink-0 ml-auto" title="Secured with Google OAuth" />
                       </div>
                     ) : (
-                      Object.keys(savedConfigs[item.id]).map((key) => {
-                        const val = savedConfigs[item.id][key];
-                        const isSecret = key.toLowerCase().includes("token") || key.toLowerCase().includes("key");
-                        return (
-                          <div key={key} className="flex items-center justify-between">
-                            <span>{key}:</span>
-                            <span className="text-gray-900 dark:text-[#e6edf3] font-medium">
-                              {isSecret ? "••••••••••••" : val}
-                            </span>
-                          </div>
-                        );
-                      })
+                      <div className="space-y-1 text-[11px] font-mono text-gray-500 dark:text-[#8b949e]">
+                        {Object.keys(savedConfigs[item.id]).map((key) => {
+                          const val = savedConfigs[item.id][key];
+                          const isSecret = key.toLowerCase().includes("token") || key.toLowerCase().includes("key");
+                          return (
+                            <div key={key} className="flex items-center justify-between">
+                              <span>{key}:</span>
+                              <span className="text-gray-900 dark:text-[#e6edf3] font-medium">
+                                {isSecret ? "••••••••••••" : val}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
                     )}
                   </div>
                 )}
+
               </div>
 
               {/* Action row */}
@@ -281,20 +322,16 @@ export default function IntegrationsPage() {
                     {item.id === "gmail" ? (
                       <button
                         onClick={handleGmailOAuth}
-                        disabled={authenticatingGmail}
-                        className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold text-white bg-[#2f81f7] hover:bg-[#2672d9] shadow-sm shadow-[#2f81f7]/25 transition-all disabled:opacity-50"
+                        className="flex items-center gap-2.5 px-4 py-2 rounded-xl text-xs font-semibold bg-white dark:bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 shadow-sm transition-all"
                       >
-                        {authenticatingGmail ? (
-                          <>
-                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                            Connecting...
-                          </>
-                        ) : (
-                          <>
-                            <ExternalLink className="w-3.5 h-3.5" />
-                            Sign in with Google
-                          </>
-                        )}
+                        {/* Google G logo */}
+                        <svg width="16" height="16" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/>
+                          <path d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z" fill="#34A853"/>
+                          <path d="M3.964 10.707A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.707V4.961H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.039l3.007-2.332z" fill="#FBBC05"/>
+                          <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.961L3.964 7.293C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335"/>
+                        </svg>
+                        Sign in with Google
                       </button>
                     ) : (
                       <button
@@ -314,8 +351,8 @@ export default function IntegrationsPage() {
       </div>
 
       {/* Info card */}
-      <div className="p-4 rounded-xl border border-blue-200 dark:border-blue-500/10 bg-blue-50/30 dark:bg-blue-500/5 flex items-start gap-3">
-        <AlertCircle className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
+      <div className="p-4 rounded-xl border border-indigo-200/50 dark:border-indigo-500/10 bg-indigo-50/30 dark:bg-indigo-500/5 flex items-start gap-3">
+        <AlertCircle className="w-5 h-5 text-indigo-500 flex-shrink-0 mt-0.5" />
         <div>
           <h5 className="text-xs font-bold text-blue-700 dark:text-blue-400">
             How credentials are secured
@@ -329,7 +366,7 @@ export default function IntegrationsPage() {
       {/* Configuration dialog modal */}
       {showConfigModal && activeIntegration && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-all">
-          <div className="w-full max-w-md bg-white dark:bg-[#161b22] border border-gray-250 dark:border-[#30363d] rounded-2xl shadow-2xl overflow-hidden">
+           <div className="w-full max-w-md bg-white/95 dark:bg-[#161b22]/95 backdrop-blur-2xl border border-gray-200/50 dark:border-white/10 rounded-2xl shadow-2xl overflow-hidden">
             {/* Modal header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-[#30363d] bg-gray-50/50 dark:bg-[#0d1117]/50">
               <div className="flex items-center gap-2">

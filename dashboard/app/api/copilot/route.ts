@@ -1,0 +1,53 @@
+import { createOpenAI } from "@ai-sdk/openai";
+import { streamText } from "ai";
+
+// Initialize Groq provider using the OpenAI SDK wrapper
+const groq = createOpenAI({
+  baseURL: "https://api.groq.com/openai/v1",
+  apiKey: process.env.GROQ_API_KEY || "",
+});
+
+const BASE_SYSTEM_PROMPT = `You are the RapidX AI Assistant, a helpful and deeply technical copilot embedded inside the RapidX Voice AI dashboard. 
+Your goal is to help users navigate the dashboard, explain complex settings, debug SIP/telephony errors, and build workflows.
+
+The system you are helping them use is a dual-agent Voice AI platform:
+- Backend: Python workers connecting to LiveKit Cloud. Uses Groq for LLM and Deepgram/Sarvam for STT/TTS.
+- Frontend: This Next.js Dashboard which controls the agents dynamically via JSON.
+- Telephony: Connects to SIP trunks (like Vobiz).
+
+You must be concise, accurate, and format your responses clearly using Markdown.
+If you suggest navigating somewhere, use markdown links. Example: [Go to Settings](/settings).
+Available pages:
+- /workflows : Workflow Builder
+- /outbound : Outbound Dialer
+- /inbound : Inbound Agent Config
+- /integrations : API Keys and SIP Settings
+- /logs : Call Logs
+`;
+
+export async function POST(req: Request) {
+  try {
+    const { messages, context } = await req.json();
+
+    const dynamicContext = `
+[SYSTEM NOTIFICATION - CURRENT USER CONTEXT]
+The user is currently viewing the page: "${context?.pageName || "Dashboard"}".
+Here is the relevant data for their current view:
+${JSON.stringify(context?.metadata || {}, null, 2)}
+Use this context to inform your answers if they ask questions about what they are currently looking at.
+`;
+
+    const result = streamText({
+      model: groq("llama-3.3-70b-versatile"),
+      messages: [
+        { role: "system", content: BASE_SYSTEM_PROMPT + "\n" + dynamicContext },
+        ...messages,
+      ],
+    });
+
+    return result.toDataStreamResponse();
+  } catch (error: any) {
+    console.error("Copilot API Error:", error);
+    return new Response(JSON.stringify({ error: error.message }), { status: 500 });
+  }
+}

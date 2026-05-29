@@ -95,21 +95,21 @@ export default function DashboardCharts({ stats }: DashboardChartsProps) {
   const inboundOutboundData = isDaily ? stats.inboundOutboundData : stats.hourlyInboundOutboundData;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-5">
       <div className="flex justify-end mb-2">
-        <div className="bg-gray-100 dark:bg-[#0d1117] border border-gray-200 dark:border-[#30363d] p-1 rounded-lg flex items-center shadow-sm">
+        <div className="bg-gray-100/80 dark:bg-white/5 border border-gray-200/50 dark:border-white/8 p-1 rounded-xl flex items-center">
           <button
             onClick={() => handleViewModeChange("hourly")}
-            className={`flex items-center gap-2 px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${
-              !isDaily ? "bg-blue-600 text-white shadow-md" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+            className={`flex items-center gap-2 px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
+              !isDaily ? "bg-indigo-500 text-white shadow-md shadow-indigo-500/25" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
             }`}
           >
             <Clock className="w-3.5 h-3.5" /> Hourly
           </button>
           <button
             onClick={() => handleViewModeChange("daily")}
-            className={`flex items-center gap-2 px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${
-              isDaily ? "bg-blue-600 text-white shadow-md" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+            className={`flex items-center gap-2 px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
+              isDaily ? "bg-indigo-500 text-white shadow-md shadow-indigo-500/25" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
             }`}
           >
             <Calendar className="w-3.5 h-3.5" /> Daily
@@ -118,7 +118,7 @@ export default function DashboardCharts({ stats }: DashboardChartsProps) {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <div className="bg-white dark:bg-[#161b22] rounded-lg border border-gray-200 dark:border-[#30363d] p-5 shadow-sm">
+        <div className="bg-white/50 dark:bg-white/[0.02] rounded-xl border border-gray-200/40 dark:border-white/5 p-5">
           <h3 className="text-sm font-bold text-gray-800 dark:text-gray-200 mb-4">Usage Overview</h3>
           <div className="h-[200px] w-full">
             <CostGraph 
@@ -137,7 +137,7 @@ export default function DashboardCharts({ stats }: DashboardChartsProps) {
           </div>
         </div>
 
-        <div className="bg-white dark:bg-[#161b22] rounded-lg border border-gray-200 dark:border-[#30363d] p-5 shadow-sm">
+        <div className="bg-white/50 dark:bg-white/[0.02] rounded-xl border border-gray-200/40 dark:border-white/5 p-5">
           <h3 className="text-sm font-bold text-gray-800 dark:text-gray-200 mb-4">Cost Analysis</h3>
           <div className="h-[200px] w-full">
             <CostGraph 
@@ -160,7 +160,7 @@ export default function DashboardCharts({ stats }: DashboardChartsProps) {
       </div>
 
       {/* ROW 3: Bar Chart */}
-      <div className="bg-white dark:bg-[#161b22] rounded-lg border border-gray-200 dark:border-[#30363d] p-5 shadow-sm">
+      <div className="bg-white/50 dark:bg-white/[0.02] rounded-xl border border-gray-200/40 dark:border-white/5 p-5">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-sm font-bold text-gray-800 dark:text-gray-200">Inbound & Outbound Calls</h3>
           <span className="text-[10px] text-gray-500 dark:text-gray-400">Activity by {isDaily ? "date" : "hour"}</span>

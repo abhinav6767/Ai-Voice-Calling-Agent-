@@ -1,13 +1,14 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import {
   UserPlus, PhoneOff, Clock, Webhook, RefreshCw, FileText, Tag, Heart,
   GitBranch, Filter, Search, Hash, Smile,
   Mail, MessageCircle, UserCheck, XCircle, PhoneOutgoing, Globe, StickyNote,
-  Bell, Calendar, Timer, Sheet, X, GripVertical,
+  Bell, Calendar, Timer, Sheet, X, GripVertical, AlertTriangle, AlertCircle, Pin,
 } from "lucide-react";
 import type { WorkflowNode } from "@/lib/workflow-types";
+import type { NodeValidationResult } from "@/lib/workflow-validation";
 import { getNodeMetadata } from "@/lib/workflow-types";
 
 const ICON_MAP: Record<string, React.ElementType> = {
@@ -27,6 +28,7 @@ interface Props {
   onDragStart: (id: string, e: React.MouseEvent) => void;
   isCondition?: boolean;
   executionState?: "idle" | "running" | "success" | "error";
+  validation?: NodeValidationResult;
 }
 
 function getConfigSummary(node: WorkflowNode): string {
@@ -85,7 +87,9 @@ export default function WorkflowNodeCard({
   onDelete,
   onDragStart,
   executionState = "idle",
+  validation,
 }: Props) {
+  const [showTooltip, setShowTooltip] = useState(false);
   const meta = getNodeMetadata(node.type);
   const color = meta?.color || "#8b949e";
   const iconName = meta?.icon || "FileText";
@@ -95,13 +99,30 @@ export default function WorkflowNodeCard({
 
   const configSummary = getConfigSummary(node);
 
-  let borderClass = "border-gray-200 dark:border-[#30363d] hover:border-gray-300 dark:hover:border-[#484f58]";
-  let shadowClass = "shadow-lg dark:shadow-[0_4px_12px_rgba(0,0,0,0.4)]";
+  // Compute validation state
+  const hasErrors = (validation?.errors?.length ?? 0) > 0;
+  const hasWarnings = (validation?.warnings?.length ?? 0) > 0;
+  const allIssues = [...(validation?.errors ?? []), ...(validation?.warnings ?? [])];
+  const isPinned = !!node.config?._pinnedData;
+
+  let borderClass = "border-gray-200/60 dark:border-white/8 hover:border-gray-300/80 dark:hover:border-white/12";
+  let shadowClass = "shadow-lg shadow-black/5 dark:shadow-[0_4px_12px_rgba(0,0,0,0.3)]";
   let pulseClass = "";
 
+  // Validation-based border overrides (only when idle)
+  if (executionState === "idle") {
+    if (hasErrors) {
+      borderClass = "border-red-400/50 dark:border-red-400/30";
+      shadowClass = "shadow-[0_0_12px_rgba(239,68,68,0.12)]";
+    } else if (hasWarnings) {
+      borderClass = "border-amber-400/50 dark:border-amber-400/30";
+      shadowClass = "shadow-[0_0_12px_rgba(245,158,11,0.12)]";
+    }
+  }
+
   if (isSelected) {
-    borderClass = "border-[#2f81f7]";
-    shadowClass = "shadow-[0_0_20px_rgba(47,129,247,0.35)]";
+    borderClass = "border-indigo-500/60 dark:border-indigo-400/40";
+    shadowClass = "shadow-[0_0_20px_rgba(99,102,241,0.25)]";
   }
 
   if (executionState === "running") {
@@ -142,15 +163,14 @@ export default function WorkflowNodeCard({
         </div>
       )}
 
-      {/* Card body */}
       <div
-        className={`rounded-xl border transition-all duration-200 overflow-hidden bg-white dark:bg-[#161b22] ${borderClass} ${shadowClass} ${pulseClass}`}
+        className={`rounded-2xl border transition-all duration-200 bg-white/90 dark:bg-[#161b22]/90 backdrop-blur-md ${borderClass} ${shadowClass} ${pulseClass}`}
       >
         {/* Color accent bar */}
-        <div className="h-1" style={{ backgroundColor: color }} />
+        <div className="h-1 rounded-t-xl" style={{ backgroundColor: color }} />
 
         {/* Header */}
-        <div className="flex items-center gap-2.5 px-3 py-2.5 border-b border-gray-100 dark:border-[#21262d]">
+        <div className="flex items-center gap-2.5 px-3 py-2.5 border-b border-gray-100/80 dark:border-white/5">
           <div
             className="cursor-grab active:cursor-grabbing p-0.5 rounded text-gray-400 dark:text-[#6e7681] hover:text-gray-600 dark:hover:text-[#8b949e]"
             onMouseDown={(e) => {
@@ -178,6 +198,52 @@ export default function WorkflowNodeCard({
             </div>
           </div>
           
+          {/* Pinned badge */}
+          {isPinned && (
+            <div className="flex items-center justify-center" title="Data pinned — will use cached output">
+              <Pin className="w-3 h-3 text-purple-400" />
+            </div>
+          )}
+
+          {/* Validation badge + tooltip */}
+          {executionState === "idle" && (hasErrors || hasWarnings) && (
+            <div
+              className="relative flex items-center justify-center mr-1 cursor-help"
+              onMouseEnter={() => setShowTooltip(true)}
+              onMouseLeave={() => setShowTooltip(false)}
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowTooltip(!showTooltip);
+              }}
+              title={hasErrors ? "Errors:\n" + validation?.errors?.join("\n") : "Warnings:\n" + validation?.warnings?.join("\n")}
+            >
+              {hasErrors ? (
+                <AlertCircle className="w-4 h-4 text-red-400" />
+              ) : (
+                <AlertTriangle className="w-4 h-4 text-amber-400" />
+              )}
+
+              {/* Tooltip */}
+              {showTooltip && allIssues.length > 0 && (
+                <div className="absolute right-0 bottom-full mb-2 w-64 bg-white/95 dark:bg-[#161b22]/95 backdrop-blur-xl border border-gray-200/50 dark:border-white/8 rounded-xl shadow-2xl p-3 z-[100] pointer-events-none">
+                  <p className="text-[10px] font-bold text-gray-300 uppercase tracking-wider mb-2">
+                    {hasErrors ? "⚠ Configuration Issues" : "⚠ Warnings"}
+                  </p>
+                  <ul className="space-y-1">
+                    {allIssues.map((issue, i) => (
+                      <li key={i} className="flex items-start gap-1.5 text-[11px] text-gray-400">
+                        <span className={`mt-0.5 w-1.5 h-1.5 rounded-full flex-shrink-0 ${
+                          i < (validation?.errors?.length ?? 0) ? "bg-red-400" : "bg-amber-400"
+                        }`} />
+                        {issue}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Execution badge */}
           {executionState !== "idle" && (
             <div className="flex items-center justify-center mr-1">

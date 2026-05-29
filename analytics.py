@@ -10,16 +10,16 @@ DATA_DIR = "data"
 LEADS_FILE = os.path.join(DATA_DIR, "leads.csv")
 LOGS_FILE = os.path.join(DATA_DIR, "call_logs.json")
 
-def save_lead_csv(name: str, phone: str, city: str):
+def save_lead_csv(name: str, phone: str, city: str, email: str = "", status: str = "contact_captured", intent: str = ""):
     try:
         os.makedirs(DATA_DIR, exist_ok=True)
-        if not os.path.exists(LEADS_FILE):
-            with open(LEADS_FILE, "w", encoding="utf-8") as f:
-                f.write("Timestamp,Name,Phone,City\n")
+        write_header = not os.path.exists(LEADS_FILE)
         with open(LEADS_FILE, "a", encoding="utf-8") as f:
+            if write_header:
+                f.write("Timestamp,Name,Phone,City,Email,Status,Intent\n")
             timestamp = datetime.datetime.now().isoformat()
-            f.write(f'"{timestamp}","{name}","{phone}","{city}"\n')
-        logger.info("[ANALYTICS] Lead saved to CSV.")
+            f.write(f'"{timestamp}","{name}","{phone}","{city}","{email}","{status}","{intent}"\n')
+        logger.info(f"[ANALYTICS] Lead saved to CSV — status={status!r}, intent={intent!r}.")
     except Exception as e:
         logger.error(f"[ANALYTICS] Failed to save lead: {e}")
 

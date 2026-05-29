@@ -266,16 +266,28 @@ export default function LeadsCRM({ initialLeads }: Props) {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          {/* Download Agent CSV (raw from AI agent) */}
+          <a
+            href="/api/leads/download"
+            download
+            className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium border border-gray-200 dark:border-[#30363d] text-gray-600 dark:text-[#8b949e] bg-white dark:bg-[#21262d] hover:bg-gray-50 dark:hover:bg-[#30363d] transition-colors"
+            title="Download raw leads captured by AI agent"
+          >
+            <Download className="w-4 h-4" />
+            Agent CSV
+          </a>
+          {/* Export CRM data */}
           <button
             onClick={handleExport}
             className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium border border-gray-200 dark:border-[#30363d] text-gray-600 dark:text-[#8b949e] bg-white dark:bg-[#21262d] hover:bg-gray-50 dark:hover:bg-[#30363d] transition-colors"
+            title="Export CRM leads with status and notes"
           >
             <Download className="w-4 h-4" />
-            Export
+            CRM Export
           </button>
           <button
             onClick={() => setShowAddModal(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white bg-[#2f81f7] hover:bg-[#2672d9] transition-all shadow-sm shadow-[#2f81f7]/25"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-white bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 transition-all shadow-sm shadow-indigo-500/20"
           >
             <Plus className="w-4 h-4" />
             Add Lead
@@ -293,7 +305,7 @@ export default function LeadsCRM({ initialLeads }: Props) {
         ].map((stat) => (
           <div
             key={stat.label}
-            className="rounded-xl border border-gray-200 dark:border-[#30363d] bg-white dark:bg-[#161b22] p-4 transition-colors"
+            className="rounded-xl border border-gray-200/50 dark:border-white/8 bg-white/80 dark:bg-[#161b22]/60 backdrop-blur-md p-4 transition-all duration-200 hover:shadow-md"
           >
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-medium text-gray-500 dark:text-[#8b949e] uppercase tracking-wider">
@@ -320,7 +332,7 @@ export default function LeadsCRM({ initialLeads }: Props) {
             value={searchQuery}
             onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
             placeholder="Search by name, phone, email, city, or tag..."
-            className="w-full pl-10 pr-4 py-2.5 text-sm rounded-lg border border-gray-200 dark:border-[#30363d] bg-white dark:bg-[#161b22] text-gray-900 dark:text-[#e6edf3] placeholder-gray-400 dark:placeholder-[#484f58] focus:outline-none focus:ring-2 focus:ring-[#2f81f7]/40 focus:border-[#2f81f7] transition-all"
+            className="w-full pl-10 pr-4 py-2.5 text-sm rounded-xl border border-gray-200/50 dark:border-white/8 bg-white/80 dark:bg-white/5 backdrop-blur-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 transition-all"
           />
         </div>
 
@@ -403,10 +415,10 @@ export default function LeadsCRM({ initialLeads }: Props) {
       )}
 
       {/* ── Table ─────────────────────────────────────────────── */}
-      <div className="rounded-xl border border-gray-200 dark:border-[#30363d] bg-white dark:bg-[#161b22] shadow-sm overflow-hidden transition-colors duration-200">
+      <div className="rounded-2xl border border-gray-200/50 dark:border-white/8 bg-white/80 dark:bg-[#161b22]/60 backdrop-blur-md shadow-sm overflow-hidden transition-all duration-200">
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left">
-            <thead className="text-[11px] text-gray-500 dark:text-[#8b949e] uppercase bg-gray-50 dark:bg-[#0d1117] border-b border-gray-200 dark:border-[#30363d]">
+            <thead className="text-[11px] text-gray-500 dark:text-gray-400 uppercase bg-gray-50/80 dark:bg-white/[0.02] border-b border-gray-200/50 dark:border-white/5">
               <tr>
                 <th className="px-4 py-3 w-10">
                   <input
@@ -435,7 +447,7 @@ export default function LeadsCRM({ initialLeads }: Props) {
                 <th className="px-4 py-3 font-medium tracking-wider text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100 dark:divide-[#21262d]">
+            <tbody className="divide-y divide-gray-100/80 dark:divide-white/5">
               {paginatedLeads.length === 0 ? (
                 <tr>
                   <td colSpan={10} className="px-6 py-16 text-center text-gray-500 dark:text-[#8b949e]">

@@ -103,9 +103,9 @@ export default function LeadDetailPanel({ lead, onClose, onUpdate }: Props) {
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
 
       {/* Panel */}
-      <div className="relative w-full max-w-lg bg-white dark:bg-[#161b22] border-l border-gray-200 dark:border-[#30363d] h-full flex flex-col shadow-2xl animate-in slide-in-from-right duration-200">
+      <div className="relative w-full max-w-lg bg-white/95 dark:bg-[#161b22]/95 backdrop-blur-2xl border-l border-gray-200/50 dark:border-white/8 h-full flex flex-col shadow-2xl animate-in slide-in-from-right duration-200">
         {/* Header */}
-        <div className="p-5 border-b border-gray-200 dark:border-[#30363d] flex-shrink-0">
+        <div className="p-5 border-b border-gray-200/50 dark:border-white/5 flex-shrink-0">
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-4">
               <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${avatarColor} flex items-center justify-center text-white text-lg font-bold shadow-lg`}>
@@ -163,14 +163,14 @@ export default function LeadDetailPanel({ lead, onClose, onUpdate }: Props) {
         </div>
 
         {/* Tabs */}
-        <div className="flex border-b border-gray-200 dark:border-[#30363d] px-5 flex-shrink-0">
+        <div className="flex border-b border-gray-200/50 dark:border-white/5 px-5 flex-shrink-0">
           {(["details", "notes", "activity"] as const).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`px-4 py-3 text-xs font-medium border-b-2 transition-colors capitalize ${
+              className={`px-4 py-3 text-xs font-medium border-b-2 transition-all duration-200 capitalize ${
                 activeTab === tab
-                  ? "border-[#2f81f7] text-[#2f81f7]"
+                  ? "border-indigo-500 text-indigo-500 dark:text-indigo-400"
                   : "border-transparent text-gray-500 dark:text-[#8b949e] hover:text-gray-700 dark:hover:text-[#c9d1d9]"
               }`}
             >
@@ -196,11 +196,11 @@ export default function LeadDetailPanel({ lead, onClose, onUpdate }: Props) {
                 </div>
 
                 <div className="space-y-2">
-                  <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-gray-50 dark:bg-[#0d1117] border border-gray-100 dark:border-[#21262d]">
+                  <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-gray-50/80 dark:bg-white/[0.03] border border-gray-100/80 dark:border-white/5">
                     <Phone className="w-4 h-4 text-gray-400 dark:text-[#6e7681]" />
                     <span className="text-sm text-gray-700 dark:text-[#c9d1d9] font-mono">{lead.phone}</span>
                   </div>
-                  <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-gray-50 dark:bg-[#0d1117] border border-gray-100 dark:border-[#21262d]">
+                  <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-gray-50/80 dark:bg-white/[0.03] border border-gray-100/80 dark:border-white/5">
                     <Mail className="w-4 h-4 text-gray-400 dark:text-[#6e7681]" />
                     {isEditing ? (
                       <input
@@ -214,11 +214,11 @@ export default function LeadDetailPanel({ lead, onClose, onUpdate }: Props) {
                       <span className="text-sm text-gray-700 dark:text-[#c9d1d9]">{lead.email || <span className="text-gray-300 dark:text-[#484f58] italic">Not set</span>}</span>
                     )}
                   </div>
-                  <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-gray-50 dark:bg-[#0d1117] border border-gray-100 dark:border-[#21262d]">
+                  <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-gray-50/80 dark:bg-white/[0.03] border border-gray-100/80 dark:border-white/5">
                     <MapPin className="w-4 h-4 text-gray-400 dark:text-[#6e7681]" />
                     <span className="text-sm text-gray-700 dark:text-[#c9d1d9]">{lead.city || <span className="text-gray-300 dark:text-[#484f58] italic">Not set</span>}</span>
                   </div>
-                  <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-gray-50 dark:bg-[#0d1117] border border-gray-100 dark:border-[#21262d]">
+                  <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-gray-50/80 dark:bg-white/[0.03] border border-gray-100/80 dark:border-white/5">
                     <User className="w-4 h-4 text-gray-400 dark:text-[#6e7681]" />
                     {isEditing ? (
                       <input

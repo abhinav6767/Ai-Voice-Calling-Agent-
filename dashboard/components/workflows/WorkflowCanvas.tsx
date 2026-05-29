@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useCallback, useRef, useEffect } from "react";
+import React, { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import type { WorkflowNode, WorkflowEdge, NodeMetadata } from "@/lib/workflow-types";
+import type { NodeValidationResult } from "@/lib/workflow-validation";
 import WorkflowNodeCard from "./WorkflowNodeCard";
 
 interface Props {
@@ -14,6 +15,7 @@ interface Props {
   onAddEdge: (sourceId: string, targetId: string, sourcePort?: string) => void;
   onDeleteEdge: (id: string) => void;
   nodeExecutionStatuses?: Record<string, "idle" | "running" | "success" | "error">;
+  nodeValidations?: Record<string, NodeValidationResult>;
 }
 
 // ── SVG Edge Rendering ───────────────────────────────────────────────────────
@@ -71,9 +73,9 @@ function EdgePath({
   const path = `M ${start.x} ${start.y} C ${start.x} ${start.y + cpOffset}, ${end.x} ${end.y - cpOffset}, ${end.x} ${end.y}`;
 
   // Edge color based on label
-  let strokeColor = "#30363d";
-  if (edge.label === "Yes" || edge.sourcePort === "yes") strokeColor = "#3fb950";
-  if (edge.label === "No" || edge.sourcePort === "no") strokeColor = "#f85149";
+  let strokeColor = "#4b5563";
+  if (edge.label === "Yes" || edge.sourcePort === "yes") strokeColor = "#34d399";
+  if (edge.label === "No" || edge.sourcePort === "no") strokeColor = "#f87171";
 
   const midX = (start.x + end.x) / 2;
   const midY = (start.y + end.y) / 2;
@@ -157,7 +159,7 @@ function ConnectionLine({
     <path
       d={path}
       fill="none"
-      stroke="#2f81f7"
+      stroke="#818cf8"
       strokeWidth={2}
       strokeDasharray="6 4"
       opacity={0.7}
@@ -177,6 +179,7 @@ export default function WorkflowCanvas({
   onAddEdge,
   onDeleteEdge,
   nodeExecutionStatuses = {},
+  nodeValidations = {},
 }: Props) {
   const canvasRef = useRef<HTMLDivElement>(null);
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
@@ -291,7 +294,13 @@ export default function WorkflowCanvas({
   const handleCanvasMouseDown = useCallback(
     (e: React.MouseEvent) => {
       // Only pan on middle-click or when clicking empty canvas
-      if (e.button === 1 || (e.target === canvasRef.current || (e.target as HTMLElement).classList.contains("canvas-bg"))) {
+      const target = e.target as HTMLElement;
+      if (
+        e.button === 1 || 
+        target === canvasRef.current || 
+        target.classList.contains("canvas-bg") ||
+        target.id === "transform-container"
+      ) {
         setIsPanning(true);
         panStart.current = {
           x: e.clientX,
@@ -305,13 +314,27 @@ export default function WorkflowCanvas({
     [panOffset, onSelectNode]
   );
 
-  // ── Zoom ───────────────────────────────────────────────────
-  const handleWheel = useCallback((e: React.WheelEvent) => {
-    e.preventDefault();
-    setZoom((prev) => {
-      const delta = e.deltaY > 0 ? -0.05 : 0.05;
-      return Math.min(2, Math.max(0.3, prev + delta));
-    });
+  // ── Scroll lock: prevent page scroll when mouse is over canvas ────────────
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const blockScroll = (e: WheelEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setZoom((prev) => {
+        const delta = e.deltaY > 0 ? -0.05 : 0.05;
+        return Math.min(2, Math.max(0.3, prev + delta));
+      });
+    };
+    const onEnter = () => canvas.addEventListener("wheel", blockScroll, { passive: false });
+    const onLeave = () => canvas.removeEventListener("wheel", blockScroll);
+    canvas.addEventListener("mouseenter", onEnter);
+    canvas.addEventListener("mouseleave", onLeave);
+    return () => {
+      canvas.removeEventListener("mouseenter", onEnter);
+      canvas.removeEventListener("mouseleave", onLeave);
+      canvas.removeEventListener("wheel", blockScroll);
+    };
   }, []);
 
   // ── Port Click (start connection) ──────────────────────────
@@ -361,42 +384,47 @@ export default function WorkflowCanvas({
   return (
     <div
       ref={canvasRef}
-      className="flex-1 h-full overflow-hidden relative cursor-grab active:cursor-grabbing"
+      className="flex-1 h-full overflow-hidden relative cursor-grab active:cursor-grabbing bg-gray-50/50 dark:bg-transparent"
       onMouseDown={handleCanvasMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
-      onWheel={handleWheel}
     >
       {/* Dot grid background */}
       <div
         className="canvas-bg absolute inset-0"
         style={{
-          backgroundImage: `radial-gradient(circle, rgba(139, 148, 158, 0.15) 1px, transparent 1px)`,
+          backgroundImage: `radial-gradient(circle, rgba(99, 102, 241, 0.08) 1px, transparent 1px)`,
           backgroundSize: `${24 * zoom}px ${24 * zoom}px`,
           backgroundPosition: `${panOffset.x}px ${panOffset.y}px`,
         }}
       />
+      {/* Subtle gradient mesh behind canvas */}
+      <div className="absolute inset-0 pointer-events-none opacity-30 dark:opacity-15">
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl" />
+        <div className="absolute bottom-1/4 right-1/3 w-80 h-80 bg-violet-500/10 rounded-full blur-3xl" />
+      </div>
 
       {/* Zoom indicator */}
-      <div className="absolute top-3 right-3 z-30 flex items-center gap-2">
+      <div className="absolute top-3 right-3 z-30 flex items-center gap-1.5 bg-white/80 dark:bg-[#161b22]/80 backdrop-blur-xl rounded-xl border border-gray-200/50 dark:border-white/8 p-1 shadow-lg shadow-black/5 dark:shadow-black/20">
         <button
           onClick={() => setZoom((z) => Math.min(2, z + 0.1))}
-          className="w-8 h-8 rounded-lg bg-white dark:bg-[#161b22] border border-gray-200 dark:border-[#30363d] text-gray-600 dark:text-[#8b949e] hover:bg-gray-50 dark:hover:bg-[#21262d] flex items-center justify-center text-sm font-medium transition-colors"
+          className="w-8 h-8 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100/80 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white flex items-center justify-center text-sm font-medium transition-all duration-150"
         >
           +
         </button>
-        <div className="px-2 py-1 rounded-lg bg-white dark:bg-[#161b22] border border-gray-200 dark:border-[#30363d] text-xs font-mono text-gray-500 dark:text-[#8b949e] min-w-[48px] text-center">
+        <div className="px-2 py-1 text-xs font-mono text-gray-500 dark:text-gray-400 min-w-[44px] text-center">
           {Math.round(zoom * 100)}%
         </div>
         <button
           onClick={() => setZoom((z) => Math.max(0.3, z - 0.1))}
-          className="w-8 h-8 rounded-lg bg-white dark:bg-[#161b22] border border-gray-200 dark:border-[#30363d] text-gray-600 dark:text-[#8b949e] hover:bg-gray-50 dark:hover:bg-[#21262d] flex items-center justify-center text-sm font-medium transition-colors"
+          className="w-8 h-8 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100/80 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white flex items-center justify-center text-sm font-medium transition-all duration-150"
         >
           −
         </button>
+        <div className="w-px h-5 bg-gray-200/50 dark:bg-white/8" />
         <button
           onClick={() => { setZoom(1); setPanOffset({ x: 0, y: 0 }); }}
-          className="px-2.5 py-1.5 rounded-lg bg-white dark:bg-[#161b22] border border-gray-200 dark:border-[#30363d] text-xs text-gray-500 dark:text-[#8b949e] hover:bg-gray-50 dark:hover:bg-[#21262d] transition-colors"
+          className="px-2.5 py-1.5 rounded-lg text-xs text-gray-500 dark:text-gray-400 hover:bg-gray-100/80 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white transition-all duration-150 font-medium"
         >
           Reset
         </button>
@@ -404,6 +432,7 @@ export default function WorkflowCanvas({
 
       {/* Transform container */}
       <div
+        id="transform-container"
         style={{
           transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${zoom})`,
           transformOrigin: "0 0",
@@ -423,8 +452,8 @@ export default function WorkflowCanvas({
         >
           <defs>
             <linearGradient id="edgeGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="#2f81f7" stopOpacity="0.6" />
-              <stop offset="100%" stopColor="#2f81f7" stopOpacity="0.2" />
+              <stop offset="0%" stopColor="#818cf8" stopOpacity="0.6" />
+              <stop offset="100%" stopColor="#818cf8" stopOpacity="0.2" />
             </linearGradient>
           </defs>
           <g style={{ pointerEvents: "all" }}>
@@ -455,6 +484,7 @@ export default function WorkflowCanvas({
             onDelete={onDeleteNode}
             onDragStart={handleNodeDragStart}
             executionState={nodeExecutionStatuses[node.id] || "idle"}
+            validation={nodeValidations[node.id]}
           />
         ))}
 
@@ -462,15 +492,15 @@ export default function WorkflowCanvas({
         {nodes.length === 0 && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <div className="text-center">
-              <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[#2f81f7]/10 border border-[#2f81f7]/20 flex items-center justify-center">
-                <svg className="w-8 h-8 text-[#2f81f7]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center">
+                <svg className="w-8 h-8 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                 </svg>
               </div>
-              <p className="text-sm font-medium text-gray-500 dark:text-[#8b949e]">
+              <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
                 Start by adding a trigger from the palette
               </p>
-              <p className="text-xs text-gray-400 dark:text-[#6e7681] mt-1">
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
                 Then add actions and conditions to build your workflow
               </p>
             </div>

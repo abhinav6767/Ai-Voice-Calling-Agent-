@@ -27,7 +27,7 @@ logger = logging.getLogger("inbound-agent")
 # Import the INBOUND config directly — no routing needed
 import config_inbound as config
 
-logger.info("[INBOUND] Agent loaded → Škoda Octavia Advisor")
+logger.info("[INBOUND] Agent loaded → Doctor's Receptionist")
 
 
 # =============================================================================
@@ -88,10 +88,11 @@ class InboundTools(llm.ToolContext):
     @llm.function_tool(
         description=(
             "Save the caller's contact information after you have collected their "
-            "name, phone number, and city. Call this once ALL THREE are confirmed."
+            "name, phone number, and city. Call this once ALL THREE are confirmed. "
+            "This is just contact capture — it does NOT mean the lead is qualified."
         )
     )
-    def save_lead_info(self, name: str, phone: str, city: str):
+    def save_lead_info(self, name: str, phone: str, city: str, email: str = ""):
         """
         Store caller lead details and confirm collection.
 
@@ -99,18 +100,53 @@ class InboundTools(llm.ToolContext):
             name:  Caller's full name
             phone: Caller's phone number
             city:  Caller's city or location
+            email: Caller's email address (optional — capture if they offer it)
         """
-        self.lead_info = {"name": name, "phone": phone, "city": city}
-        logger.info(f"[LEAD] ✅ Captured → name={name!r}, phone={phone!r}, city={city!r}")
+        self.lead_info = {"name": name, "phone": phone, "city": city, "email": email}
+        logger.info(f"[LEAD] 📋 Contact captured → name={name!r}, phone={phone!r}, city={city!r}, email={email!r}")
 
-        # Write to CSV
+        # Write to CSV (contact info only, not yet qualified)
         import analytics
-        analytics.save_lead_csv(name, phone, city)
+        analytics.save_lead_csv(name, phone, city, email=email, status="contact_captured")
 
         return (
             f"Thank you, {name}! I've noted your details from {city}. "
-            f"Now, let me tell you all about the stunning new Škoda Octavia — "
+            f"Now, let me check the available time slots for our doctors — "
             f"what would you like to know first?"
+        )
+
+    @llm.function_tool(
+        description=(
+            "Mark this lead as QUALIFIED and successful. Call this ONLY when the caller "
+            "expresses a clear, specific buying intent — such as: requesting a test drive, "
+            "asking for a home/doorstep demo, wanting to visit the showroom, asking to book "
+            "an appointment, requesting a personalised quote with intent to purchase, or "
+            "saying they want to buy. DO NOT call this just because they gave their contact info "
+            "or asked general questions about the car."
+        )
+    )
+    def mark_lead_qualified(self, intent: str):
+        """
+        Mark the lead as qualified based on expressed buying intent.
+
+        Args:
+            intent: What specific action the caller requested (e.g. 'test drive booking',
+                    'home demo request', 'showroom visit', 'price quote for purchase')
+        """
+        name  = self.lead_info.get("name", "Caller")
+        phone = self.lead_info.get("phone", "")
+        city  = self.lead_info.get("city", "")
+        email = self.lead_info.get("email", "")
+
+        logger.info(f"[LEAD] ✅ QUALIFIED → intent={intent!r}, name={name!r}, phone={phone!r}")
+
+        import analytics
+        analytics.save_lead_csv(name, phone, city, email=email, status="qualified", intent=intent)
+
+        return (
+            f"Excellent! I've noted your request for a {intent}. "
+            f"Our team will be in touch with you shortly to confirm all the details. "
+            f"Is there anything else I can help you with in the meantime?"
         )
 
     @llm.function_tool(description="Transfer the caller to a live human sales representative.")
@@ -158,7 +194,7 @@ class InboundTools(llm.ToolContext):
 # =============================================================================
 
 class InboundAssistant(Agent):
-    """Škoda Octavia advisor — leads with info capture, then answers car questions."""
+    """Doctor's Receptionist — leads with info capture, then assists with appointments."""
     def __init__(self, tools: list):
         super().__init__(instructions=config.SYSTEM_PROMPT, tools=tools)
         logger.info("[INBOUND] InboundAssistant initialised.")

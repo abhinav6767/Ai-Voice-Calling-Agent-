@@ -29,10 +29,10 @@ export default async function LogsPage() {
         <p className="text-gray-500 dark:text-[#8b949e]">Transcripts, summaries, and sentiment analysis of all completed calls.</p>
       </div>
 
-      <div className="rounded-xl border border-gray-200 dark:border-[#30363d] bg-white dark:bg-[#161b22] shadow-sm flex-1 overflow-hidden flex flex-col">
+      <div className="rounded-2xl border border-gray-200/50 dark:border-white/8 bg-white/80 dark:bg-[#161b22]/60 backdrop-blur-md shadow-sm flex-1 overflow-hidden flex flex-col">
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left">
-            <thead className="text-xs text-gray-500 dark:text-[#8b949e] uppercase bg-gray-50 dark:bg-[#0d1117] border-b border-gray-200 dark:border-[#30363d]">
+            <thead className="text-xs text-gray-500 dark:text-gray-400 uppercase bg-gray-50/80 dark:bg-white/[0.02] border-b border-gray-200/50 dark:border-white/5">
               <tr>
                 <th className="px-6 py-4 font-medium tracking-wider">Timestamp</th>
                 <th className="px-6 py-4 font-medium tracking-wider">Status &amp; Mode</th>
@@ -43,7 +43,7 @@ export default async function LogsPage() {
                 <th className="px-6 py-4 font-medium tracking-wider text-right">Action</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100 dark:divide-[#30363d]">
+            <tbody className="divide-y divide-gray-100/80 dark:divide-white/5">
               {logs.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="px-6 py-16 text-center text-gray-400 dark:text-[#8b949e]">

@@ -5,6 +5,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, PieChart, Pie, Cell, Legend,
 } from "recharts";
+import { motion } from "framer-motion";
 import { Wallet, TrendingDown, Clock, CheckCircle2, Phone, FileText, Mic, Radio, Zap, ChevronRight } from "lucide-react";
 import type { WalletData, TransactionType } from "@/lib/actions";
 import { useTheme } from "next-themes";
@@ -48,7 +49,7 @@ function fmt(amount: number, currency: string) {
 function CustomBarTooltip({ active, payload, label, currency }: any) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-white dark:bg-[#1c2128] border border-gray-200 dark:border-[#30363d] rounded-xl shadow-xl p-3 text-sm">
+    <div className="bg-white/90 dark:bg-[#1c2128]/90 backdrop-blur-md border border-gray-200/50 dark:border-white/8 rounded-xl shadow-xl p-3 text-sm">
       <p className="font-semibold text-gray-700 dark:text-[#e6edf3] mb-2">{label}</p>
       {payload.map((p: any) => (
         <div key={p.dataKey} className="flex items-center gap-2 mb-0.5">
@@ -66,7 +67,7 @@ function CustomPieTooltip({ active, payload, currency }: any) {
   if (!active || !payload?.length) return null;
   const p = payload[0];
   return (
-    <div className="bg-white dark:bg-[#1c2128] border border-gray-200 dark:border-[#30363d] rounded-xl shadow-xl p-3 text-sm">
+    <div className="bg-white/90 dark:bg-[#1c2128]/90 backdrop-blur-md border border-gray-200/50 dark:border-white/8 rounded-xl shadow-xl p-3 text-sm">
       <div className="flex items-center gap-2">
         <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ background: p.payload.fill }} />
         <span className="font-semibold text-gray-700 dark:text-[#e6edf3]">{p.name}</span>
@@ -140,7 +141,10 @@ export default function WalletDashboard({ data }: { data: WalletData }) {
           };
           const p = palettes[clr];
           return (
-            <div key={card.label} className={`rounded-xl border p-5 shadow-sm ${p.bg}`}>
+            <div 
+              key={card.label} 
+              className={`relative h-[140px] rounded-2xl border p-5 shadow-sm backdrop-blur-md ${p.bg} flex flex-col justify-center transition-all hover:-translate-y-1 hover:shadow-md cursor-default`}
+            >
               <div className="flex items-center gap-3 mb-3">
                 <div className={`p-2 rounded-lg ${p.iconBg}`}>
                   <Icon className={`w-4 h-4 ${p.text}`} />
@@ -148,7 +152,6 @@ export default function WalletDashboard({ data }: { data: WalletData }) {
                 <p className="text-sm font-medium text-gray-500 dark:text-[#8b949e]">{card.label}</p>
               </div>
               <p className={`text-2xl font-bold ${p.text}`}>{card.value}</p>
-              {card.sub && <p className="text-xs text-gray-400 dark:text-[#8b949e] mt-1.5">{card.sub}</p>}
             </div>
           );
         })}
@@ -158,7 +161,7 @@ export default function WalletDashboard({ data }: { data: WalletData }) {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
         {/* Daily Spending Bar Chart */}
-        <div className="lg:col-span-2 bg-white dark:bg-[#161b22] border border-gray-200 dark:border-[#30363d] rounded-xl p-5 shadow-sm">
+        <div className="lg:col-span-2 bg-white/80 dark:bg-[#161b22]/60 backdrop-blur-md border border-gray-200/50 dark:border-white/8 rounded-2xl p-5 shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-semibold text-gray-900 dark:text-[#e6edf3]">Daily Spending Breakdown</h3>
             {dailySpending.length > 0 && (
@@ -196,7 +199,7 @@ export default function WalletDashboard({ data }: { data: WalletData }) {
         </div>
 
         {/* Spending Categories Donut */}
-        <div className="bg-white dark:bg-[#161b22] border border-gray-200 dark:border-[#30363d] rounded-xl p-5 shadow-sm flex flex-col">
+        <div className="bg-white/80 dark:bg-[#161b22]/60 backdrop-blur-md border border-gray-200/50 dark:border-white/8 rounded-2xl p-5 shadow-sm flex flex-col">
           <h3 className="font-semibold text-gray-900 dark:text-[#e6edf3] mb-4">Spending Categories</h3>
           {pieData.length > 0 ? (
             <>
@@ -243,7 +246,7 @@ export default function WalletDashboard({ data }: { data: WalletData }) {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
         {/* Recent Transactions */}
-        <div className="lg:col-span-2 bg-white dark:bg-[#161b22] border border-gray-200 dark:border-[#30363d] rounded-xl shadow-sm overflow-hidden">
+        <div className="lg:col-span-2 bg-white/80 dark:bg-[#161b22]/60 backdrop-blur-md border border-gray-200/50 dark:border-white/8 rounded-2xl shadow-sm overflow-hidden">
           <div className="flex items-center justify-between px-5 pt-5 pb-1">
             <div>
               <h3 className="font-semibold text-gray-900 dark:text-[#e6edf3]">Recent Transactions</h3>
@@ -300,7 +303,7 @@ export default function WalletDashboard({ data }: { data: WalletData }) {
         </div>
 
         {/* Usage Summary */}
-        <div className="bg-white dark:bg-[#161b22] border border-gray-200 dark:border-[#30363d] rounded-xl p-5 shadow-sm">
+        <div className="bg-white/80 dark:bg-[#161b22]/60 backdrop-blur-md border border-gray-200/50 dark:border-white/8 rounded-2xl p-5 shadow-sm">
           <h3 className="font-semibold text-gray-900 dark:text-[#e6edf3] mb-5">Usage Summary</h3>
           <div className="space-y-5">
             {[

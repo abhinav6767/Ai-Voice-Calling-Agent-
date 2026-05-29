@@ -109,7 +109,7 @@ function Section({ icon: Icon, title, subtitle, children, defaultOpen = true, ac
   const [open, setOpen] = useState(defaultOpen);
 
   const colors: Record<string, string> = {
-    blue: "text-blue-500 dark:text-[#2f81f7] bg-blue-50 dark:bg-[#2f81f7]/10",
+    blue: "text-indigo-500 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-500/10",
     purple: "text-purple-500 dark:text-[#a371f7] bg-purple-50 dark:bg-[#a371f7]/10",
     green: "text-green-500 dark:text-[#2ea043] bg-green-50 dark:bg-[#2ea043]/10",
     orange: "text-orange-500 dark:text-[#fb8f24] bg-orange-50 dark:bg-[#fb8f24]/10",
@@ -119,10 +119,10 @@ function Section({ icon: Icon, title, subtitle, children, defaultOpen = true, ac
   };
 
   return (
-    <div className="bg-white dark:bg-[#161b22] rounded-xl border border-gray-200 dark:border-[#30363d] shadow-sm overflow-hidden transition-colors duration-200">
+    <div className="bg-white/80 dark:bg-[#161b22]/60 backdrop-blur-xl rounded-2xl border border-gray-200/50 dark:border-white/10 shadow-xl overflow-hidden transition-all duration-300 hover:shadow-2xl hover:border-indigo-500/30">
       <button
         onClick={() => setOpen(!open)}
-        className="w-full flex items-center gap-3 p-5 text-left hover:bg-gray-50 dark:hover:bg-[#1c2128] transition-colors"
+        className="w-full flex items-center gap-3 p-5 text-left hover:bg-white/40 dark:hover:bg-white/[0.02] transition-colors"
       >
         <div className={`p-2 rounded-lg ${colors[accentColor] || colors.blue}`}>
           <Icon className="w-4 h-4" />
@@ -134,7 +134,7 @@ function Section({ icon: Icon, title, subtitle, children, defaultOpen = true, ac
         {open ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
       </button>
       {open && (
-        <div className="px-5 pb-5 space-y-4 border-t border-gray-100 dark:border-[#30363d]/50 pt-4 animate-in fade-in duration-200">
+        <div className="px-5 pb-5 space-y-4 border-t border-gray-200/50 dark:border-white/5 pt-4 animate-in fade-in slide-in-from-top-2 duration-300">
           {children}
         </div>
       )}
@@ -161,7 +161,7 @@ function TextInput({ id, value, onChange, placeholder, type = "text" }: {
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
-      className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-[#30363d] bg-gray-50 dark:bg-[#0d1117] text-gray-900 dark:text-[#e6edf3] text-sm focus:outline-none focus:ring-2 focus:ring-[#2f81f7]/40 focus:border-[#2f81f7] transition-all placeholder:text-gray-400 dark:placeholder:text-[#484f58]"
+      className="w-full px-4 py-2.5 rounded-xl border border-gray-200/50 dark:border-white/10 bg-white/50 dark:bg-black/20 backdrop-blur-sm text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 transition-all placeholder:text-gray-400 dark:placeholder:text-[#484f58]"
     />
   );
 }
@@ -176,7 +176,7 @@ function TextArea({ id, value, onChange, placeholder, rows = 3 }: {
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
       rows={rows}
-      className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-[#30363d] bg-gray-50 dark:bg-[#0d1117] text-gray-900 dark:text-[#e6edf3] text-sm focus:outline-none focus:ring-2 focus:ring-[#2f81f7]/40 focus:border-[#2f81f7] transition-all font-mono leading-relaxed resize-y placeholder:text-gray-400 dark:placeholder:text-[#484f58]"
+      className="w-full px-4 py-3 rounded-xl border border-gray-200/50 dark:border-white/10 bg-white/50 dark:bg-black/20 backdrop-blur-sm text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 transition-all font-mono leading-relaxed resize-y placeholder:text-gray-400 dark:placeholder:text-[#484f58]"
     />
   );
 }
@@ -190,7 +190,7 @@ function Select({ id, value, onChange, options }: {
       id={id}
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-[#30363d] bg-gray-50 dark:bg-[#0d1117] text-gray-900 dark:text-[#e6edf3] text-sm focus:outline-none focus:ring-2 focus:ring-[#2f81f7]/40 focus:border-[#2f81f7] transition-all cursor-pointer"
+      className="w-full px-4 py-2.5 rounded-xl border border-gray-200/50 dark:border-white/10 bg-white/50 dark:bg-black/20 backdrop-blur-sm text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500 transition-all cursor-pointer"
     >
       {options.map((opt) => (
         <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -333,13 +333,13 @@ export default function AgentConfigForm({ mode }: { mode: "inbound" | "outbound"
   if (loading || !config) {
     return (
       <div className="flex items-center justify-center h-96">
-        <Loader2 className="w-8 h-8 text-[#2f81f7] animate-spin" />
+        <Loader2 className="w-8 h-8 text-indigo-500 animate-spin" />
       </div>
     );
   }
 
   const modeLabel = mode === "inbound" ? "Inbound" : "Outbound";
-  const modeColorClass = mode === "inbound" ? "from-blue-500 to-cyan-500" : "from-purple-500 to-pink-500";
+  const modeColorClass = mode === "inbound" ? "from-indigo-500 to-blue-500" : "from-purple-500 to-indigo-500";
 
   return (
     <div className="space-y-5 max-w-4xl mx-auto pb-10 relative">
@@ -370,7 +370,7 @@ export default function AgentConfigForm({ mode }: { mode: "inbound" | "outbound"
         <div className="flex items-center gap-2">
           <button
             onClick={handleReset}
-            className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg border border-gray-200 dark:border-[#30363d] text-gray-600 dark:text-[#8b949e] hover:bg-gray-100 dark:hover:bg-[#21262d] transition-colors"
+            className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-xl border border-gray-200/50 dark:border-white/10 text-gray-600 dark:text-[#8b949e] hover:bg-gray-100/50 dark:hover:bg-white/[0.03] transition-colors"
           >
             <RotateCcw className="w-3.5 h-3.5" />
             Reset
@@ -378,10 +378,10 @@ export default function AgentConfigForm({ mode }: { mode: "inbound" | "outbound"
           <button
             onClick={handleSave}
             disabled={saving || !isDirty}
-            className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg transition-all shadow-sm ${
+            className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-xl transition-all shadow-sm ${
               isDirty
-                ? "bg-[#2f81f7] hover:bg-[#1f6feb] text-white shadow-[0_0_12px_rgba(47,129,247,0.3)]"
-                : "bg-gray-200 dark:bg-[#21262d] text-gray-400 dark:text-[#484f58] cursor-not-allowed"
+                ? "bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 text-white shadow-[0_0_15px_rgba(99,102,241,0.4)]"
+                : "bg-gray-200/50 dark:bg-[#21262d]/50 text-gray-400 dark:text-[#484f58] cursor-not-allowed border border-gray-200/50 dark:border-white/5"
             }`}
           >
             {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
@@ -460,10 +460,10 @@ export default function AgentConfigForm({ mode }: { mode: "inbound" | "outbound"
             {config.resources.map((res, idx) => (
               <div
                 key={idx}
-                className="flex items-start gap-3 p-3 rounded-lg bg-gray-50 dark:bg-[#0d1117] border border-gray-100 dark:border-[#30363d]/60 group"
+                className="flex items-start gap-3 p-3 rounded-xl bg-white/40 dark:bg-white/[0.02] backdrop-blur-sm border border-gray-200/50 dark:border-white/5 group"
               >
-                <div className={`p-1.5 rounded-md mt-0.5 ${
-                  res.type === "url" ? "bg-blue-50 dark:bg-[#2f81f7]/10 text-blue-500 dark:text-[#2f81f7]" :
+                <div className={`p-1.5 rounded-lg mt-0.5 ${
+                  res.type === "url" ? "bg-indigo-50 dark:bg-indigo-500/10 text-indigo-500" :
                   res.type === "file" ? "bg-green-50 dark:bg-[#2ea043]/10 text-green-500 dark:text-[#2ea043]" :
                   "bg-purple-50 dark:bg-[#a371f7]/10 text-purple-500 dark:text-[#a371f7]"
                 }`}>
@@ -492,29 +492,29 @@ export default function AgentConfigForm({ mode }: { mode: "inbound" | "outbound"
         )}
 
         {/* Add resource */}
-        <div className="border border-dashed border-gray-200 dark:border-[#30363d] rounded-lg p-4 space-y-3">
+        <div className="border border-dashed border-gray-200/80 dark:border-white/10 rounded-xl p-5 space-y-4 bg-white/20 dark:bg-black/10 backdrop-blur-sm">
           <div className="flex items-center gap-2">
             <button
               onClick={() => setNewResourceType("url")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md border transition-all ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all ${
                 newResourceType === "url"
-                  ? "bg-blue-50 dark:bg-[#2f81f7]/10 text-blue-600 dark:text-[#2f81f7] border-blue-200 dark:border-[#2f81f7]/30"
-                  : "text-gray-500 dark:text-[#8b949e] border-gray-200 dark:border-[#30363d] hover:bg-gray-50 dark:hover:bg-[#21262d]"
+                  ? "bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-500/30 shadow-sm"
+                  : "text-gray-500 dark:text-[#8b949e] border-gray-200/50 dark:border-white/10 hover:bg-gray-50/50 dark:hover:bg-white/[0.02]"
               }`}
             >
               <Link2 className="w-3 h-3" />URL
             </button>
             <button
               onClick={() => setNewResourceType("text")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md border transition-all ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all ${
                 newResourceType === "text"
-                  ? "bg-purple-50 dark:bg-[#a371f7]/10 text-purple-600 dark:text-[#a371f7] border-purple-200 dark:border-[#a371f7]/30"
-                  : "text-gray-500 dark:text-[#8b949e] border-gray-200 dark:border-[#30363d] hover:bg-gray-50 dark:hover:bg-[#21262d]"
+                  ? "bg-purple-50 dark:bg-[#a371f7]/10 text-purple-600 dark:text-[#a371f7] border-purple-200 dark:border-[#a371f7]/30 shadow-sm"
+                  : "text-gray-500 dark:text-[#8b949e] border-gray-200/50 dark:border-white/10 hover:bg-gray-50/50 dark:hover:bg-white/[0.02]"
               }`}
             >
               <FileText className="w-3 h-3" />Text
             </button>
-            <div className="border-l border-gray-200 dark:border-[#30363d] h-5 mx-1" />
+            <div className="border-l border-gray-200/50 dark:border-white/10 h-5 mx-1" />
             <input
               type="file"
               ref={fileInputRef}
@@ -525,7 +525,7 @@ export default function AgentConfigForm({ mode }: { mode: "inbound" | "outbound"
             <button
               onClick={() => fileInputRef.current?.click()}
               disabled={uploading}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md border text-gray-500 dark:text-[#8b949e] border-gray-200 dark:border-[#30363d] hover:bg-gray-50 dark:hover:bg-[#21262d] transition-all"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border text-gray-500 dark:text-[#8b949e] border-gray-200/50 dark:border-white/10 hover:bg-gray-50/50 dark:hover:bg-white/[0.02] transition-all"
             >
               {uploading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Upload className="w-3 h-3" />}
               Upload File
@@ -561,7 +561,7 @@ export default function AgentConfigForm({ mode }: { mode: "inbound" | "outbound"
           <button
             onClick={addResource}
             disabled={!newResourceName.trim() || !newResourceValue.trim()}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md bg-[#2f81f7] text-white hover:bg-[#1f6feb] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-xl bg-gradient-to-r from-indigo-500 to-violet-600 text-white hover:from-indigo-600 hover:to-violet-700 shadow-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <Plus className="w-3 h-3" />
             Add Resource
@@ -673,7 +673,7 @@ export default function AgentConfigForm({ mode }: { mode: "inbound" | "outbound"
             step="0.05"
             value={config.llm_temperature}
             onChange={(e) => update("llm_temperature", parseFloat(e.target.value))}
-            className="w-full h-2 bg-gray-200 dark:bg-[#30363d] rounded-lg appearance-none cursor-pointer accent-[#2f81f7]"
+            className="w-full h-2 bg-gray-200 dark:bg-white/10 rounded-lg appearance-none cursor-pointer accent-indigo-500"
           />
           <div className="flex justify-between text-[10px] text-gray-400 dark:text-[#484f58] mt-1">
             <span>Precise (0.0)</span>
@@ -688,16 +688,16 @@ export default function AgentConfigForm({ mode }: { mode: "inbound" | "outbound"
           {config.custom_functions.map((fn, idx) => (
             <div
               key={idx}
-              className={`flex items-center gap-3 p-3 rounded-lg border transition-all ${
+              className={`flex items-center gap-3 p-4 rounded-xl border transition-all ${
                 fn.enabled
-                  ? "bg-green-50/50 dark:bg-[#2ea043]/5 border-green-200 dark:border-[#2ea043]/20"
-                  : "bg-gray-50 dark:bg-[#0d1117] border-gray-200 dark:border-[#30363d]"
+                  ? "bg-green-50/50 dark:bg-[#2ea043]/10 border-green-200 dark:border-[#2ea043]/20 shadow-sm"
+                  : "bg-white/40 dark:bg-white/[0.02] backdrop-blur-sm border-gray-200/50 dark:border-white/5"
               }`}
             >
               <button
                 onClick={() => toggleFunction(idx)}
                 className={`relative w-10 h-5 rounded-full transition-colors ${
-                  fn.enabled ? "bg-green-500 dark:bg-[#2ea043]" : "bg-gray-300 dark:bg-[#30363d]"
+                  fn.enabled ? "bg-green-500 dark:bg-[#2ea043]" : "bg-gray-300 dark:bg-white/10"
                 }`}
               >
                 <span
@@ -732,24 +732,24 @@ export default function AgentConfigForm({ mode }: { mode: "inbound" | "outbound"
 
       {/* Sticky save bar */}
       {isDirty && (
-        <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-gray-200 dark:border-[#30363d] bg-white/90 dark:bg-[#161b22]/90 backdrop-blur-lg py-3 px-8">
+        <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-gray-200/50 dark:border-white/5 bg-white/70 dark:bg-[#161b22]/70 backdrop-blur-xl py-4 px-8 shadow-[0_-4px_24px_-8px_rgba(0,0,0,0.1)]">
           <div className="max-w-4xl mx-auto flex items-center justify-between">
-            <p className="text-sm text-gray-500 dark:text-[#8b949e] flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-yellow-400 animate-pulse" />
+            <p className="text-sm font-medium text-gray-700 dark:text-[#c9d1d9] flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.6)] animate-pulse" />
               You have unsaved changes
             </p>
-            <div className="flex gap-2">
+            <div className="flex gap-3">
               <button
                 onClick={handleReset}
-                className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-lg border border-gray-200 dark:border-[#30363d] text-gray-600 dark:text-[#8b949e] hover:bg-gray-100 dark:hover:bg-[#21262d] transition-colors"
+                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-xl border border-gray-200/50 dark:border-white/10 text-gray-600 dark:text-[#8b949e] hover:bg-gray-100/50 dark:hover:bg-white/[0.03] transition-colors"
               >
-                <RotateCcw className="w-3 h-3" />
+                <RotateCcw className="w-3.5 h-3.5" />
                 Discard
               </button>
               <button
                 onClick={handleSave}
                 disabled={saving}
-                className="inline-flex items-center gap-2 px-4 py-1.5 text-sm font-semibold rounded-lg bg-[#2f81f7] hover:bg-[#1f6feb] text-white shadow-[0_0_12px_rgba(47,129,247,0.3)] transition-all"
+                className="inline-flex items-center gap-2 px-5 py-2 text-sm font-semibold rounded-xl bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 text-white shadow-[0_0_15px_rgba(99,102,241,0.4)] transition-all"
               >
                 {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
                 Save
