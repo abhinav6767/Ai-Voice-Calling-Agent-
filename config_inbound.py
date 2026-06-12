@@ -8,6 +8,7 @@ load_dotenv()
 #  Dashboard Config Bridge — loads overrides from data/agent_config.json
 # =========================================================================================
 _CONFIG_FILE = os.path.join(os.path.dirname(__file__), "data", "agent_config.json")
+_LAST_MTIME = 0.0
 
 def load_dashboard_config():
     """Reload config from the dashboard JSON file. Overrides module globals."""
@@ -16,10 +17,18 @@ def load_dashboard_config():
     global DEFAULT_TTS_PROVIDER, DEFAULT_TTS_VOICE, SARVAM_LANGUAGE
     global DEFAULT_LLM_PROVIDER, GROQ_MODEL, GROQ_TEMPERATURE
     global DEFAULT_TRANSFER_NUMBER
+    global _LAST_MTIME
 
     try:
         if not os.path.exists(_CONFIG_FILE):
             return
+        
+        # Optimize: Only reload if the config file has actually changed
+        current_mtime = os.path.getmtime(_CONFIG_FILE)
+        if current_mtime <= _LAST_MTIME:
+            return
+        _LAST_MTIME = current_mtime
+
         with open(_CONFIG_FILE, "r", encoding="utf-8") as f:
             data = json.load(f)
         cfg = data.get("inbound")
@@ -238,7 +247,7 @@ FALLBACK_GREETING = "Warmly greet the customer as a Škoda Octavia Sales Advisor
 # --- 2. SPEECH-TO-TEXT (STT) SETTINGS ---
 STT_PROVIDER = "deepgram"
 STT_MODEL = "nova-2"
-STT_LANGUAGE = "en"
+STT_LANGUAGE = "auto"
 
 
 # --- 3. TEXT-TO-SPEECH (TTS) SETTINGS ---
@@ -246,7 +255,7 @@ DEFAULT_TTS_PROVIDER = "sarvam"
 DEFAULT_TTS_VOICE = "anushka"
 
 # Sarvam AI Specifics
-SARVAM_MODEL = "bulbul:v2"
+SARVAM_MODEL = "bulbul:v3"
 SARVAM_LANGUAGE = "en-IN"   # English (Indian accent) for Skoda advisor
 
 # Cartesia Specifics (fallback)

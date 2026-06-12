@@ -85,6 +85,24 @@
 
 ## 🪵 Immutable Change Log
 
+### [2026-06-12] - Voice Calling Agent Conversational Experience & Latency Optimizations
+* **Context:** Optimized inbound and outbound voice agents for lower latency, higher quality TTS, and dynamic multilingual capabilities.
+* **Scope:**
+  - Upgraded Sarvam TTS model to `"bulbul:v3"` in `config_inbound.py` and `config_outbound.py` for more natural speech.
+  - Implemented dynamic STT language detection (`detect_language=True` when `STT_LANGUAGE = "auto"`) in `agent_inbound.py` and `agent_outbound.py`.
+  - Added TTS pre-warming via silent pings (`session.say(" ")`) on session startup to eliminate WebSocket connection latency during first greetings.
+  - Optimized dashboard config load times by checking file modification time (`mtime`) before reloading.
+* **Impact:** Reduced initial greeting response latency and significantly improved agent conversational understanding and speech naturalness.
+* **Verification:** Verified config structure loading and parameter defaults.
+
+### [2026-06-12] - Automatic Logging, Summary Generation, and Log Cleanup
+* **Context:** Automated backend/frontend logs capture, summary reports, and auto-cleanup for logs older than 1 month.
+* **Scope:**
+  - Configured `dashboard/package.json` to route dev servers through `log_runner.py`.
+  - Re-architected `run.py` to act as a log wrapper for agents, auto-saving stdout/stderr to timestamped files with summaries on exit.
+  - Added a monthly (30-day) log cleanup function to `log_runner.py` and `run.py`.
+* **Impact:** Seamless background log generation with summary reports on manual runs, keeping the log directory clean.
+
 ### [2026-06-11] - Premium UI Standardization & Dashboard Overhaul
 * **Context:** Overhauled the global design system to use a high-end "Premium Solid" aesthetic (clean typography, crisp borders, dark solid backgrounds) based on user design specs.
 * **Scope:**

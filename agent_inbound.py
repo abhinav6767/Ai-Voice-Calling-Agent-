@@ -231,9 +231,15 @@ async def entrypoint(ctx: agents.JobContext):
     built_tts = _build_tts()
     built_llm = _build_llm()
 
+    # Support dynamic language detection or code-switching if set to 'auto'
+    is_auto = (config.STT_LANGUAGE == "auto")
     session = AgentSession(
         vad=_VAD,  # reuse pre-loaded model — no disk I/O on call start
-        stt=deepgram.STT(model=config.STT_MODEL, language=config.STT_LANGUAGE),
+        stt=deepgram.STT(
+            model=config.STT_MODEL,
+            language=config.STT_LANGUAGE if not is_auto else "en-US",
+            detect_language=is_auto,
+        ),
         llm=built_llm,
         tts=built_tts,
     )

@@ -317,6 +317,30 @@ def run_frontend():
 
 
 # =============================================================================
+# LOG CLEANUP
+# =============================================================================
+
+def cleanup_old_logs():
+    """Delete log and markdown report files older than 30 days (1 month)."""
+    if not LOGS_DIR.exists():
+        return
+    now = time.time()
+    one_month_seconds = 30 * 24 * 60 * 60
+    deleted_count = 0
+    for file_path in LOGS_DIR.iterdir():
+        if file_path.is_file() and file_path.suffix in [".log", ".md"]:
+            try:
+                file_mtime = file_path.stat().st_mtime
+                if (now - file_mtime) > one_month_seconds:
+                    file_path.unlink()
+                    deleted_count += 1
+            except Exception as e:
+                log(YELLOW, "CLEANUP", f"Failed to delete {file_path.name}: {e}")
+    if deleted_count > 0:
+        log(GREEN, "CLEANUP", f"Cleaned up {deleted_count} log/report files older than 1 month.")
+
+
+# =============================================================================
 # MAIN
 # =============================================================================
 
@@ -324,6 +348,9 @@ def main():
     print(f"\n{BOLD}{'═' * 60}{RESET}")
     print(f"{BOLD}  📋 AI Voice Agent — Log Runner{RESET}")
     print(f"{BOLD}{'═' * 60}{RESET}\n")
+
+    # Clean up old logs on startup
+    cleanup_old_logs()
 
     if len(sys.argv) < 2:
         print("Usage:")

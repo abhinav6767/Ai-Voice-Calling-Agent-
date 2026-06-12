@@ -214,14 +214,17 @@ async def entrypoint(ctx: agents.JobContext):
     built_tts = _build_tts(config_dict.get("model_provider"), config_dict.get("voice_id"))
     built_llm = _build_llm(config_dict.get("model_provider"))
 
+    # Support dynamic language detection or code-switching if set to 'auto'
+    is_auto = (config.STT_LANGUAGE == "auto")
     session = AgentSession(
         vad=_VAD,  # reuse pre-loaded model — no disk I/O on call start
-        stt=deepgram.STT(model=config.STT_MODEL, language=config.STT_LANGUAGE),
+        stt=deepgram.STT(
+            model=config.STT_MODEL,
+            language=config.STT_LANGUAGE if not is_auto else "en-US",
+            detect_language=is_auto,
+        ),
         llm=built_llm,
         tts=built_tts,
-        # Tune VAD for faster conversational turn detection
-        # min_silence_duration: how long silence before we stop listening (ms)
-        # prefix_padding: how much audio before speech onset to include (ms)
     )
 
     user_prompt = config_dict.get("user_prompt", "")
@@ -253,11 +256,9 @@ async def entrypoint(ctx: agents.JobContext):
     )
     logger.info("[OUTBOUND] Session started.")
 
-    # Warm up the TTS engine immediately so the first utterance has no cold-start
-    # delay. We don't await this — it runs in the background while we dial.
-    asyncio.ensure_future(session.generate_reply(
-        instructions="Say nothing. This is a warmup ping."
-    )) if False else None  # disabled — kept as reference; use say() instead
+    # Warm up the TTS connection by speaking a silent space.
+    # This initializes the connection and websocket early, eliminating cold-start latency when greeting.
+    asyncio.create_task(session.say(" ", allow_interruptions=True))
 
     # --- Dial or greet ---
     remote_participants = list(ctx.room.remote_participants.values())

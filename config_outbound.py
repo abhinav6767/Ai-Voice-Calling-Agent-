@@ -8,6 +8,7 @@ load_dotenv()
 #  Dashboard Config Bridge — loads overrides from data/agent_config.json
 # =========================================================================================
 _CONFIG_FILE = os.path.join(os.path.dirname(__file__), "data", "agent_config.json")
+_LAST_MTIME = 0.0
 
 def load_dashboard_config():
     """Reload config from the dashboard JSON file. Overrides module globals."""
@@ -16,10 +17,18 @@ def load_dashboard_config():
     global DEFAULT_TTS_PROVIDER, DEFAULT_TTS_VOICE, SARVAM_LANGUAGE
     global DEFAULT_LLM_PROVIDER, GROQ_MODEL, GROQ_TEMPERATURE
     global DEFAULT_TRANSFER_NUMBER
+    global _LAST_MTIME
 
     try:
         if not os.path.exists(_CONFIG_FILE):
             return
+        
+        # Optimize: Only reload if the config file has actually changed
+        current_mtime = os.path.getmtime(_CONFIG_FILE)
+        if current_mtime <= _LAST_MTIME:
+            return
+        _LAST_MTIME = current_mtime
+
         with open(_CONFIG_FILE, "r", encoding="utf-8") as f:
             data = json.load(f)
         cfg = data.get("outbound")
@@ -228,7 +237,7 @@ FALLBACK_GREETING = "Hi , Priya here from Spinny — I had tried reaching you ea
 # --- 2. SPEECH-TO-TEXT (STT) SETTINGS ---
 STT_PROVIDER = "deepgram"
 STT_MODEL = "nova-2"   # "nova-2" (balanced) or "nova-3" (newest)
-STT_LANGUAGE = "en"    # "en" supports multi-language code switching in Nova 2
+STT_LANGUAGE = "auto"    # "auto" enables multi-language detection/code-switching
 
 
 # --- 3. TEXT-TO-SPEECH (TTS) SETTINGS ---
@@ -236,7 +245,7 @@ DEFAULT_TTS_PROVIDER = "sarvam"
 DEFAULT_TTS_VOICE = "aravind"   # OpenAI: alloy, echo, shimmer | Sarvam: anushka, aravind
 
 # Sarvam AI Specifics (for Indian Context)
-SARVAM_MODEL = "bulbul:v2"
+SARVAM_MODEL = "bulbul:v3"
 SARVAM_LANGUAGE = "hi-IN"  # or en-IN
 
 # Cartesia Specifics
