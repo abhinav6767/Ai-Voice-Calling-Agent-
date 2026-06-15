@@ -40,6 +40,8 @@ interface AgentConfig {
   llm_model: string;
   llm_temperature: number;
   transfer_number: string;
+  automatic_handoff: boolean;
+  handoff_conditions: string;
   resources: Resource[];
   custom_functions: CustomFunction[];
 }
@@ -921,6 +923,42 @@ export default function AgentConfigForm({ mode }: { mode: "inbound" | "outbound"
           <p className="text-[10px] text-gray-400 dark:text-[#484f58] mt-1">
             Phone number to transfer calls to when the transfer function is triggered.
           </p>
+        </div>
+
+        <div className="border-t border-gray-100 dark:border-[#30363d]/50 pt-4 mt-4">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => update("automatic_handoff", !config.automatic_handoff)}
+              className={`relative w-10 h-5 rounded-full transition-colors ${
+                config.automatic_handoff ? "bg-green-500 dark:bg-[#2ea043]" : "bg-gray-300 dark:bg-white/10"
+              }`}
+            >
+              <span
+                className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${
+                  config.automatic_handoff ? "translate-x-5" : "translate-x-0"
+                }`}
+              />
+            </button>
+            <div>
+              <Label>Enable Automatic Call Handoff</Label>
+              <p className="text-xs text-gray-500 dark:text-[#8b949e]">
+                Automatically transfer the call to the default transfer number when certain conditions are met.
+              </p>
+            </div>
+          </div>
+          
+          {config.automatic_handoff && (
+            <div className="mt-4 pl-13 animate-in slide-in-from-top-2 duration-300">
+              <Label htmlFor="handoff_conditions">Handoff Conditions</Label>
+              <TextArea
+                id="handoff_conditions"
+                value={config.handoff_conditions || ""}
+                onChange={(v) => update("handoff_conditions", v)}
+                placeholder="e.g. If the user asks for a human, or gets frustrated, or asks a question not covered in the knowledge base."
+                rows={2}
+              />
+            </div>
+          )}
         </div>
       </Section>
 

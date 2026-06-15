@@ -144,6 +144,28 @@ class OutboundTools(llm.ToolContext):
         super().__init__(tools=[])
         self.ctx = ctx
         self.phone_number = phone_number
+        self.agent_session: Optional[AgentSession] = None
+
+    @llm.function_tool(
+        description=(
+            "Change the spoken language of the AI agent dynamically if the user requests it "
+            "or starts speaking a different language consistently. For Sarvam TTS, use BCP-47 codes "
+            "like 'hi-IN' (Hindi), 'en-IN' (English), 'ta-IN' (Tamil), 'te-IN' (Telugu), 'mr-IN' (Marathi), "
+            "'gu-IN' (Gujarati), 'bn-IN' (Bengali)."
+        )
+    )
+    async def change_spoken_language(self, language_code: str):
+        """Args: language_code: The BCP-47 language code to switch to (e.g., 'hi-IN')."""
+        logger.info(f"[TOOL] change_spoken_language to: {language_code}")
+        if self.agent_session and hasattr(self.agent_session.tts, "update_options"):
+            try:
+                # This works specifically for LiveKit plugins like Sarvam that support update_options
+                self.agent_session.tts.update_options(target_language_code=language_code)
+                return f"Language successfully changed to {language_code}. Please reply in this new language."
+            except Exception as e:
+                logger.error(f"[TOOL] Failed to change language: {e}")
+                return f"Failed to change language to {language_code}. {e}"
+        return f"Language switch to {language_code} recorded, but TTS provider may not natively support hot-swapping."
 
     @llm.function_tool(description="Look up user details by phone number.")
     async def lookup_user(self, phone: str):
@@ -168,9 +190,13 @@ class OutboundTools(llm.ToolContext):
             target = f"sip:{target}"
 
         participant_identity = None
-        if self.phone_number:
-            participant_identity = f"sip_{self.phone_number}"
-        else:
+        for p in self.ctx.room.remote_participants.values():
+            if "sip_" in p.identity:
+                participant_identity = p.identity
+                break
+        
+        # Fallback if no SIP participant found
+        if not participant_identity:
             for p in self.ctx.room.remote_participants.values():
                 participant_identity = p.identity
                 break
@@ -208,8 +234,18 @@ class OutboundAssistant(Agent):
         else:
             instructions = config.SYSTEM_PROMPT
             
+        if getattr(config, "AUTOMATIC_HANDOFF", False) and getattr(config, "HANDOFF_CONDITIONS", ""):
+            instructions += f"\n\nAUTOMATIC HANDOFF RULES: If the following conditions are met: [{config.HANDOFF_CONDITIONS}], you MUST immediately execute the `transfer_call` tool to hand off the call to a human agent. Do not ask for permission, just transfer."
+            
+        instructions += (
+            "\n\nCRITICAL LANGUAGE INSTRUCTION: If the user explicitly asks you to speak a different language, "
+            "or consistently starts speaking in a different language (e.g., Hindi instead of English), "
+            "you MUST call the `change_spoken_language` tool to switch your TTS engine to their language code "
+            "(like 'hi-IN'). After calling the tool, reply to them entirely in that new language."
+        )
+            
         if tts_language and "en" not in tts_language.lower():
-            instructions += f"\n\nCRITICAL: You MUST speak entirely in the language code '{tts_language}'. Do NOT speak English."
+            instructions += f"\n\nCRITICAL: Your current target language is '{tts_language}'. You MUST speak entirely in this language code. Do NOT speak English."
             
         super().__init__(instructions=instructions, tools=tools)
 
@@ -274,6 +310,9 @@ async def entrypoint(ctx: agents.JobContext):
         llm=built_llm,
         tts=built_tts,
     )
+    
+    # Link session to tools for dynamic language switching
+    fnc_ctx.agent_session = session
 
     user_prompt = config_dict.get("user_prompt", "")
     agent_instance = OutboundAssistant(

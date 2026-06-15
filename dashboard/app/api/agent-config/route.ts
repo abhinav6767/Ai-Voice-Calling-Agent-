@@ -23,6 +23,8 @@ const DEFAULTS: Record<string, any> = {
     llm_model: "llama-3.3-70b-versatile",
     llm_temperature: 0.7,
     transfer_number: "",
+    automatic_handoff: false,
+    handoff_conditions: "",
     resources: [],
     custom_functions: [
       { name: "save_lead_info", description: "Save the caller's contact information (name, phone, city) after collection.", enabled: true },
@@ -45,6 +47,8 @@ const DEFAULTS: Record<string, any> = {
     llm_model: "llama-3.3-70b-versatile",
     llm_temperature: 0.7,
     transfer_number: "",
+    automatic_handoff: false,
+    handoff_conditions: "",
     resources: [],
     custom_functions: [
       { name: "lookup_user", description: "Look up user details by phone number.", enabled: true },

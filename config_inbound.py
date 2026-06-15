@@ -29,7 +29,8 @@ def load_dashboard_config():
     global STT_PROVIDER, STT_MODEL, STT_LANGUAGE
     global DEFAULT_TTS_PROVIDER, DEFAULT_TTS_VOICE, SARVAM_LANGUAGE
     global DEFAULT_LLM_PROVIDER, GROQ_MODEL, GROQ_TEMPERATURE
-    global DEFAULT_TRANSFER_NUMBER
+    global DEFAULT_LLM_PROVIDER, GROQ_MODEL, GROQ_TEMPERATURE
+    global DEFAULT_TRANSFER_NUMBER, AUTOMATIC_HANDOFF, HANDOFF_CONDITIONS
     global _LAST_MTIME
 
     try:
@@ -84,6 +85,10 @@ def load_dashboard_config():
             GROQ_TEMPERATURE = cfg["llm_temperature"]
         if cfg.get("transfer_number"):
             DEFAULT_TRANSFER_NUMBER = cfg["transfer_number"]
+        if cfg.get("automatic_handoff") is not None:
+            AUTOMATIC_HANDOFF = cfg["automatic_handoff"]
+        if cfg.get("handoff_conditions"):
+            HANDOFF_CONDITIONS = cfg["handoff_conditions"]
 
     except Exception as e:
         print(f"[CONFIG] Failed to load dashboard config for inbound: {e}")
@@ -287,6 +292,8 @@ GROQ_TEMPERATURE = 0.7
 
 # --- 5. TELEPHONY & TRANSFERS ---
 DEFAULT_TRANSFER_NUMBER = os.getenv("DEFAULT_TRANSFER_NUMBER")
+AUTOMATIC_HANDOFF = False
+HANDOFF_CONDITIONS = ""
 
 # Inbound SIP Trunk (configure in .env)
 SIP_TRUNK_ID = os.getenv("INBOUND_TRUNK_ID", os.getenv("VOBIZ_SIP_TRUNK_ID"))

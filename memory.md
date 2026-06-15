@@ -85,6 +85,16 @@
 
 ## 🪵 Immutable Change Log
 
+### [2026-06-14] - Automatic Call Handoff Feature
+* **Context:** User requested the ability to setup "automatic call handoff" to automatically transfer calls to a human agent based on dynamic conditions without asking for permission.
+* **Scope:**
+  - `data/agent_config.json` — Added `automatic_handoff` and `handoff_conditions` fields to default schema.
+  - `dashboard/app/api/agent-config/route.ts` — Exposed new config fields.
+  - `dashboard/components/AgentConfigForm.tsx` — Added UI toggle and text area to configure the handoff conditions.
+  - `config_inbound.py` / `config_outbound.py` — Parsed the new config variables into globals.
+  - `agent_inbound.py` / `agent_outbound.py` — Modified the LLM instructions to explicitly prepend strict instructions for calling the transfer tools when the `AUTOMATIC_HANDOFF` rule evaluates as true.
+* **Impact:** Agents can now automatically escalate calls to humans when frustrated users or unsupported requests are detected (or any condition provided by the user).
+
 ### [2026-06-14] - Voice Preview Button + Language Support Chips in Dashboard
 * **Context:** User requested ability to audition each TTS voice before saving, and to see which languages a voice supports.
 * **Scope:**
