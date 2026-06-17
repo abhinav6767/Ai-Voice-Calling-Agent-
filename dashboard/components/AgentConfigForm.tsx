@@ -25,6 +25,7 @@ interface CustomFunction {
 
 interface AgentConfig {
   agent_name: string;
+  gender: "male" | "female";
   call_description: string;
   system_prompt: string;
   initial_greeting: string;
@@ -179,6 +180,40 @@ export default function AgentConfigForm({ mode }: { mode: "inbound" | "outbound"
   const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
   const [uploading, setUploading] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
+  const [generatingField, setGeneratingField] = useState<string | null>(null);
+
+  const generateField = useCallback(async (field: "greeting" | "description") => {
+    if (!config?.system_prompt?.trim()) {
+      showToast("error", "Please write a system prompt first — the AI needs it to generate content.");
+      return;
+    }
+    setGeneratingField(field);
+    try {
+      const res = await fetch("/api/generate-field", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          system_prompt: config.system_prompt,
+          agent_name: config.agent_name,
+          gender: config.gender ?? "female",
+          field,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      if (field === "greeting") {
+        update("initial_greeting", data.generated);
+        showToast("success", "Greeting generated! Review and save when ready.");
+      } else {
+        update("call_description", data.generated);
+        showToast("success", "Description generated! Review and save when ready.");
+      }
+    } catch (e: any) {
+      showToast("error", `Generation failed: ${e.message}`);
+    } finally {
+      setGeneratingField(null);
+    }
+  }, [config]);
 
   // Dynamic provider catalog
   const [catalog, setCatalog] = useState<ProviderCatalog>(FALLBACK_CATALOG);
@@ -484,12 +519,48 @@ export default function AgentConfigForm({ mode }: { mode: "inbound" | "outbound"
 
       {/* Section 1: Agent Identity */}
       <Section icon={Bot} title="Agent Identity" subtitle="Name and purpose of this AI agent" accentColor="blue">
-        <div>
-          <Label htmlFor="agent_name">Agent Name</Label>
-          <TextInput id="agent_name" value={config.agent_name} onChange={(v) => update("agent_name", v)} placeholder="e.g. Sales Advisor" />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <Label htmlFor="agent_name">Agent Name</Label>
+            <TextInput id="agent_name" value={config.agent_name} onChange={(v) => update("agent_name", v)} placeholder="e.g. Priya, Rahul, Alex" />
+          </div>
+          <div>
+            <Label htmlFor="agent_gender">Agent Gender</Label>
+            <p className="text-[10px] text-gray-400 dark:text-[#484f58] mb-1.5">Affects grammar in Hindi and other gendered languages.</p>
+            <div className="flex gap-2">
+              {(["female", "male"] as const).map((g) => (
+                <button
+                  key={g}
+                  type="button"
+                  onClick={() => update("gender", g)}
+                  className={`flex-1 py-2 px-3 rounded-xl border text-sm font-medium transition-all capitalize ${
+                    (config.gender ?? "female") === g
+                      ? g === "female"
+                        ? "bg-pink-50 dark:bg-[#f778ba]/10 text-pink-600 dark:text-[#f778ba] border-pink-200 dark:border-[#f778ba]/30 shadow-sm"
+                        : "bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-500/30 shadow-sm"
+                      : "bg-white/30 dark:bg-white/[0.02] text-gray-500 dark:text-[#8b949e] border-gray-200/50 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/[0.04]"
+                  }`}
+                >
+                  {g === "female" ? "♀ Female" : "♂ Male"}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
         <div>
-          <Label htmlFor="call_description">What's this call about?</Label>
+          <div className="flex items-center justify-between mb-1.5">
+            <Label htmlFor="call_description">What's this call about?</Label>
+            <button
+              type="button"
+              onClick={() => generateField("description")}
+              disabled={generatingField === "description" || !config.system_prompt?.trim()}
+              title={!config.system_prompt?.trim() ? "Write a system prompt first" : "Generate description from system prompt"}
+              className="flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-semibold rounded-lg border border-indigo-200 dark:border-indigo-500/30 text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-500/10 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {generatingField === "description" ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+              {generatingField === "description" ? "Generating…" : "✨ Generate"}
+            </button>
+          </div>
           <TextArea
             id="call_description"
             value={config.call_description}
@@ -522,7 +593,19 @@ export default function AgentConfigForm({ mode }: { mode: "inbound" | "outbound"
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <Label htmlFor="initial_greeting">Initial Greeting</Label>
+            <div className="flex items-center justify-between mb-1.5">
+              <Label htmlFor="initial_greeting">Initial Greeting</Label>
+              <button
+                type="button"
+                onClick={() => generateField("greeting")}
+                disabled={generatingField === "greeting" || !config.system_prompt?.trim()}
+                title={!config.system_prompt?.trim() ? "Write a system prompt first" : "Auto-generate greeting from system prompt"}
+                className="flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-semibold rounded-lg border border-indigo-200 dark:border-indigo-500/30 text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-500/10 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {generatingField === "greeting" ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                {generatingField === "greeting" ? "Generating…" : "✨ Generate"}
+              </button>
+            </div>
             <TextArea
               id="initial_greeting"
               value={config.initial_greeting}
@@ -530,6 +613,7 @@ export default function AgentConfigForm({ mode }: { mode: "inbound" | "outbound"
               placeholder="What the agent says when the call starts..."
               rows={3}
             />
+            <p className="text-[10px] text-gray-400 dark:text-[#484f58] mt-1">Generated from your system prompt + gender setting above.</p>
           </div>
           <div>
             <Label htmlFor="fallback_greeting">Fallback Greeting</Label>

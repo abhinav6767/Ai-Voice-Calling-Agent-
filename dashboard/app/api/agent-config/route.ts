@@ -9,6 +9,7 @@ const DATA_DIR = path.join(process.cwd(), "..", "data");
 const DEFAULTS: Record<string, any> = {
   inbound: {
     agent_name: "Škoda Octavia Advisor",
+    gender: "female",
     call_description: "Inbound call handler for Škoda Octavia sales inquiries. Collects leads and answers product questions.",
     system_prompt: "",
     initial_greeting: "A customer has just called in. Greet them warmly as a Škoda Octavia Advisor and immediately ask for their name to begin the conversation.",
@@ -33,6 +34,7 @@ const DEFAULTS: Record<string, any> = {
   },
   outbound: {
     agent_name: "School Receptionist",
+    gender: "female",
     call_description: "Outbound call agent acting as school receptionist for Kendriya Vidyalaya No 1 Gurugram.",
     system_prompt: "",
     initial_greeting: "The user has picked up the call. Introduce yourself as the School Receptionist immediately.",
