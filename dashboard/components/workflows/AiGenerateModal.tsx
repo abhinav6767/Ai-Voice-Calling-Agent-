@@ -511,9 +511,9 @@ export default function AiGenerateModal({ isOpen, onClose, onSuccess, initialPro
                   onClick={handleGenerate}
                   disabled={!prompt.trim() || generating}
                   className="flex items-center gap-2 px-5 py-2 rounded-xl text-xs font-bold text-white
-                    bg-gradient-to-r from-purple-600 to-indigo-600
-                    hover:from-purple-700 hover:to-indigo-700
-                    shadow-md shadow-purple-500/25
+                    bg-purple-600
+                    hover:bg-purple-700
+                    shadow-md shadow-purple-600/20
                     transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   {generating ? (
@@ -537,9 +537,9 @@ export default function AiGenerateModal({ isOpen, onClose, onSuccess, initialPro
                 onClick={handleSaveAndOpen}
                 disabled={saving}
                 className="flex items-center gap-2 px-6 py-2 rounded-xl text-xs font-bold text-white
-                  bg-gradient-to-r from-purple-600 to-indigo-600
-                  hover:from-purple-700 hover:to-indigo-700
-                  shadow-md shadow-purple-500/25 transition-all disabled:opacity-40"
+                  bg-purple-600
+                  hover:bg-purple-700
+                  shadow-md shadow-purple-600/20 transition-all disabled:opacity-40"
               >
                 {saving ? (
                   <><Loader2 className="w-4 h-4 animate-spin" /> Saving...</>

@@ -507,7 +507,7 @@ export default function AgentConfigForm({ mode }: { mode: "inbound" | "outbound"
             disabled={saving || !isDirty}
             className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-xl transition-all shadow-sm ${
               isDirty
-                ? "bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 text-white shadow-[0_0_15px_rgba(99,102,241,0.4)]"
+                ? "bg-indigo-600 hover:bg-indigo-700 text-white shadow-[0_0_15px_rgba(79,70,229,0.3)]"
                 : "bg-gray-200/50 dark:bg-[#21262d]/50 text-gray-400 dark:text-[#484f58] cursor-not-allowed border border-gray-200/50 dark:border-white/5"
             }`}
           >
@@ -712,7 +712,7 @@ export default function AgentConfigForm({ mode }: { mode: "inbound" | "outbound"
           <button
             onClick={addResource}
             disabled={!newResourceName.trim() || !newResourceValue.trim()}
-            className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-xl bg-gradient-to-r from-indigo-500 to-violet-600 text-white hover:from-indigo-600 hover:to-violet-700 shadow-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+            className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <Plus className="w-3 h-3" />
             Add Resource
@@ -1065,7 +1065,7 @@ export default function AgentConfigForm({ mode }: { mode: "inbound" | "outbound"
               <button
                 onClick={handleSave}
                 disabled={saving}
-                className="inline-flex items-center gap-2 px-5 py-2 text-sm font-semibold rounded-xl bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 text-white shadow-[0_0_15px_rgba(99,102,241,0.4)] transition-all"
+                className="inline-flex items-center gap-2 px-5 py-2 text-sm font-semibold rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white shadow-[0_0_15px_rgba(79,70,229,0.3)] transition-all"
               >
                 {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
                 Save

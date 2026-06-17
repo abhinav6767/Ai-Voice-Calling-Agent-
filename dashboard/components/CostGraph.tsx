@@ -97,10 +97,16 @@ export default function CostGraph({ logs, customData, type = "default", brushSta
               stroke="#8b949e" 
               fill="transparent" 
               travellerWidth={6} 
-              startIndex={brushStartIndex !== undefined && !isNaN(brushStartIndex) ? Math.min(Math.max(0, brushStartIndex), customData.length - 1) : Math.max(0, customData.length - 7)} 
-              endIndex={brushEndIndex !== undefined && !isNaN(brushEndIndex) ? Math.min(Math.max(0, brushEndIndex), customData.length - 1) : Math.max(0, customData.length - 1)} 
+              startIndex={typeof brushStartIndex === 'number' && !isNaN(brushStartIndex) ? Math.min(Math.max(0, brushStartIndex), customData.length - 1) : Math.max(0, customData.length - 7)} 
+              endIndex={typeof brushEndIndex === 'number' && !isNaN(brushEndIndex) ? Math.min(Math.max(0, brushEndIndex), customData.length - 1) : Math.max(0, customData.length - 1)} 
               onChange={onBrushChange} 
-              tickFormatter={(idx) => customData?.[idx]?.date?.split(' ')[0] || ''} 
+              tickFormatter={(value) => {
+                if (typeof value === 'string') return value.split(' ')[0];
+                if (typeof value === 'number' && customData?.[value]?.date) {
+                  return customData[value].date.split(' ')[0];
+                }
+                return '';
+              }}
             />
           )}
         </AreaChart>
@@ -150,10 +156,16 @@ export default function CostGraph({ logs, customData, type = "default", brushSta
               stroke="#8b949e" 
               fill="transparent" 
               travellerWidth={6} 
-              startIndex={brushStartIndex !== undefined && !isNaN(brushStartIndex) ? Math.min(Math.max(0, brushStartIndex), customData.length - 1) : Math.max(0, customData.length - 7)} 
-              endIndex={brushEndIndex !== undefined && !isNaN(brushEndIndex) ? Math.min(Math.max(0, brushEndIndex), customData.length - 1) : Math.max(0, customData.length - 1)} 
+              startIndex={typeof brushStartIndex === 'number' && !isNaN(brushStartIndex) ? Math.min(Math.max(0, brushStartIndex), customData.length - 1) : Math.max(0, customData.length - 7)} 
+              endIndex={typeof brushEndIndex === 'number' && !isNaN(brushEndIndex) ? Math.min(Math.max(0, brushEndIndex), customData.length - 1) : Math.max(0, customData.length - 1)} 
               onChange={onBrushChange} 
-              tickFormatter={(idx) => customData?.[idx]?.date?.split(' ')[0] || ''} 
+              tickFormatter={(value) => {
+                if (typeof value === 'string') return value.split(' ')[0];
+                if (typeof value === 'number' && customData?.[value]?.date) {
+                  return customData[value].date.split(' ')[0];
+                }
+                return '';
+              }}
             />
           )}
         </AreaChart>
@@ -194,10 +206,16 @@ export default function CostGraph({ logs, customData, type = "default", brushSta
               stroke="#8b949e" 
               fill="transparent" 
               travellerWidth={6} 
-              startIndex={brushStartIndex !== undefined && !isNaN(brushStartIndex) ? Math.min(Math.max(0, brushStartIndex), customData.length - 1) : Math.max(0, customData.length - 7)} 
-              endIndex={brushEndIndex !== undefined && !isNaN(brushEndIndex) ? Math.min(Math.max(0, brushEndIndex), customData.length - 1) : Math.max(0, customData.length - 1)} 
+              startIndex={typeof brushStartIndex === 'number' && !isNaN(brushStartIndex) ? Math.min(Math.max(0, brushStartIndex), customData.length - 1) : Math.max(0, customData.length - 7)} 
+              endIndex={typeof brushEndIndex === 'number' && !isNaN(brushEndIndex) ? Math.min(Math.max(0, brushEndIndex), customData.length - 1) : Math.max(0, customData.length - 1)} 
               onChange={onBrushChange} 
-              tickFormatter={(idx) => customData?.[idx]?.date?.split(' ')[0] || ''} 
+              tickFormatter={(value) => {
+                if (typeof value === 'string') return value.split(' ')[0];
+                if (typeof value === 'number' && customData?.[value]?.date) {
+                  return customData[value].date.split(' ')[0];
+                }
+                return '';
+              }}
             />
           )}
         </BarChart>

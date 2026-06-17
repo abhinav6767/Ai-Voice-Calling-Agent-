@@ -19,10 +19,12 @@ export default function DashboardCharts({ stats }: DashboardChartsProps) {
     inboundOutbound: {}
   });
   
+  const [mounted, setMounted] = useState(false);
   const isMounted = useRef(false);
 
   // Initialize state from localStorage on mount
   useEffect(() => {
+    setMounted(true);
     const savedMode = localStorage.getItem("dashboard-view-mode") as "daily" | "hourly";
     const mode = savedMode === "daily" || savedMode === "hourly" ? savedMode : "daily";
     
@@ -93,6 +95,21 @@ export default function DashboardCharts({ stats }: DashboardChartsProps) {
   const usageData = isDaily ? stats.usageChartData : stats.hourlyUsageData;
   const costData = isDaily ? stats.costChartData : stats.hourlyCostData;
   const inboundOutboundData = isDaily ? stats.inboundOutboundData : stats.hourlyInboundOutboundData;
+
+  if (!mounted) {
+    return (
+      <div className="space-y-6 p-5">
+        <div className="flex justify-end mb-2">
+          <div className="h-8 w-32 bg-gray-100 dark:bg-white/5 rounded-xl animate-pulse" />
+        </div>
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="bg-white dark:bg-[#111111] rounded-2xl border border-gray-100 dark:border-white/5 p-5 shadow-sm h-[280px] animate-pulse" />
+          <div className="bg-white dark:bg-[#111111] rounded-2xl border border-gray-100 dark:border-white/5 p-5 shadow-sm h-[280px] animate-pulse" />
+        </div>
+        <div className="bg-white dark:bg-[#111111] rounded-2xl border border-gray-100 dark:border-white/5 p-5 shadow-sm h-[220px] animate-pulse" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 p-5">

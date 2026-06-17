@@ -85,6 +85,18 @@
 
 ## 🪵 Immutable Change Log
 
+### [2026-06-17] - Frontend Button Aesthetic Updates (Solid Premium Colors)
+* **Context:** User did not like the gradient color scheme on buttons in the frontend dashboard.
+* **Scope:**
+  - `dashboard/components/AgentConfigForm.tsx` — Replaced indigo-to-violet gradients with solid premium Indigo (`bg-indigo-600` / `bg-indigo-700`) on Save, Reset, and Add Resource buttons.
+  - `dashboard/components/LeadsCRM.tsx` — Replaced indigo-to-violet gradient on the "Add Lead" button with solid premium Indigo.
+  - `dashboard/components/copilot/CopilotWidget.tsx` — Updated floating widget toggle button from gradient to solid premium Indigo.
+  - `dashboard/app/workflows/page.tsx` — Replaced purple-to-indigo gradient on the AI Generate banner button with solid premium Purple (`bg-purple-600` / `bg-purple-700`).
+  - `dashboard/components/workflows/AiGenerateModal.tsx` — Replaced purple-to-indigo gradients on Generate Workflow and Open in Builder buttons with solid premium Purple.
+  - `dashboard/components/CostGraph.tsx` — Updated Recharts `<Brush>` components with strict type checks for `brushStartIndex` / `brushEndIndex` and corrected the `tickFormatter` value-indexing logic to eliminate `NaN` console errors on chart renders.
+  - `dashboard/components/DashboardCharts.tsx` — Added a client-side mount state check and animation-pulsed loading skeletons to prevent Recharts from mounting during SSR/hydration when layout dimensions are unmeasured (0px), eliminating related React `NaN` rendering warnings.
+* **Impact:** Unified and modernized primary button aesthetic across the dashboard with high-end, clean solid brand colors, matching the premium solid aesthetic, and resolved all runtime Recharts/SSR console warnings.
+
 ### [2026-06-15] - Dashboard Animation and Layout Thrashing Optimizations
 * **Context:** User requested optimizations to make all animations in the project feel smoother, faster, and lag-free without stuttering.
 * **Scope:**

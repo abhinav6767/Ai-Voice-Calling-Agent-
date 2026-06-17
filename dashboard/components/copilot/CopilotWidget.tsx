@@ -148,7 +148,7 @@ export default function CopilotWidget() {
           className={`w-14 h-14 rounded-2xl flex items-center justify-center text-white shadow-xl transition-all duration-300 ${
             isOpen
               ? "bg-gray-700 dark:bg-[#21262d] shadow-gray-700/20"
-              : "bg-gradient-to-br from-indigo-500 to-violet-600 shadow-indigo-500/30 hover:shadow-indigo-500/50"
+              : "bg-indigo-600 hover:bg-indigo-700 shadow-indigo-600/20 hover:shadow-indigo-600/40"
           }`}
         >
           <AnimatePresence mode="wait" initial={false}>
