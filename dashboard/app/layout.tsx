@@ -1,12 +1,6 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "../styles/globals.css";
-import Sidebar from "@/components/Sidebar";
-import { AppProvider } from "@/components/app-provider";
-import { CopilotProvider } from "@/components/copilot/CopilotContext";
-import CopilotWidget from "@/components/copilot/CopilotWidget";
-import TopHeader from "@/components/TopHeader";
-import MainWrapper from "@/components/MainWrapper";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -19,6 +13,9 @@ export const metadata: Metadata = {
   description: "AI Voice Agent and Workflow Builder",
 };
 
+// Root layout: only wraps html/body/fonts.
+// The sidebar + shell live in app/(dashboard)/layout.tsx
+// The login/auth pages have their own layouts and don't inherit the shell.
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -28,20 +25,9 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body
         suppressHydrationWarning
-        className={`${inter.variable} font-sans text-gray-900 dark:text-[#e6edf3] h-screen w-screen overflow-hidden antialiased bg-white dark:bg-[#111111] flex`}
+        className={`${inter.variable} font-sans text-gray-900 dark:text-[#e6edf3] antialiased`}
       >
-        <CopilotProvider>
-          <AppProvider>
-            <Sidebar />
-
-            <div className="flex-1 flex flex-col h-full overflow-y-auto relative z-[1] bg-white/40 dark:bg-transparent">
-              <TopHeader />
-              <MainWrapper>{children}</MainWrapper>
-            </div>
-            
-            <CopilotWidget />
-          </AppProvider>
-        </CopilotProvider>
+        {children}
       </body>
     </html>
   );

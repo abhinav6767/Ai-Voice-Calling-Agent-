@@ -579,15 +579,24 @@ function BuilderContent() {
 
   // ── Node Operations ──────────────────────────────────────────────────────────
   const handleAddNode = useCallback(
-    (metadata: NodeMetadata) => {
-      const maxY = nodes.length > 0 ? Math.max(...nodes.map((n) => n.position.y)) : -60;
+    (metadata: NodeMetadata, position?: { x: number; y: number }) => {
+      let x = 300;
+      let y = 0;
+      if (position) {
+        x = position.x;
+        y = position.y;
+      } else {
+        const maxY = nodes.length > 0 ? Math.max(...nodes.map((n) => n.position.y)) : -60;
+        y = maxY + 170;
+      }
+
       const newNode: WorkflowNode = {
         id: generateNodeId(),
         type: metadata.type,
         category: metadata.category,
         label: metadata.label,
         config: { ...metadata.defaultConfig },
-        position: { x: 300, y: maxY + 170 },
+        position: { x, y },
       };
       setNodes((prev) => [...prev, newNode]);
       setSelectedNodeId(newNode.id);
@@ -1097,6 +1106,7 @@ function BuilderContent() {
           onDeleteEdge={handleDeleteEdge}
           nodeExecutionStatuses={nodeExecutionStatuses}
           nodeValidations={nodeValidations}
+          onAddNode={handleAddNode}
         />
 
         {/* Right panel: config or executions */}

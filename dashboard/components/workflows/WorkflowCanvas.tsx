@@ -16,6 +16,7 @@ interface Props {
   onDeleteEdge: (id: string) => void;
   nodeExecutionStatuses?: Record<string, "idle" | "running" | "success" | "error">;
   nodeValidations?: Record<string, NodeValidationResult>;
+  onAddNode?: (metadata: NodeMetadata, position: { x: number; y: number }) => void;
 }
 
 // ── TB Layout Constants ──────────────────────────────────────────────────────
@@ -190,6 +191,7 @@ export default function WorkflowCanvas({
   onDeleteEdge,
   nodeExecutionStatuses = {},
   nodeValidations = {},
+  onAddNode,
 }: Props) {
   const canvasRef = useRef<HTMLDivElement>(null);
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
@@ -235,8 +237,8 @@ export default function WorkflowCanvas({
         const dx = (e.clientX - dragStart.current.x) / zoom;
         const dy = (e.clientY - dragStart.current.y) / zoom;
         onMoveNode(dragNodeId, {
-          x: Math.max(0, dragStart.current.nodeX + dx),
-          y: Math.max(-500, dragStart.current.nodeY + dy), // allow moving up to -500 (pan up to reach it)
+          x: dragStart.current.nodeX + dx,
+          y: dragStart.current.nodeY + dy,
         });
       } else if (isPanning) {
         const dx = e.clientX - panStart.current.x;
@@ -299,6 +301,35 @@ export default function WorkflowCanvas({
       }
     },
     [dragNodeId, isPanning, connectionStart, nodes, zoom, panOffset, onAddEdge]
+  );
+
+  // ── Canvas Drag and Drop ───────────────────────────────────
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "copy";
+  }, []);
+
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      if (!onAddNode) return;
+
+      const data = e.dataTransfer.getData("application/workflow-node");
+      if (!data) return;
+
+      try {
+        const metadata: NodeMetadata = JSON.parse(data);
+        const rect = canvasRef.current?.getBoundingClientRect();
+        if (rect) {
+          const x = (e.clientX - rect.left - panOffset.x) / zoom;
+          const y = (e.clientY - rect.top - panOffset.y) / zoom;
+          onAddNode(metadata, { x, y });
+        }
+      } catch (err) {
+        console.error("Failed to parse dropped node metadata:", err);
+      }
+    },
+    [onAddNode, panOffset, zoom]
   );
 
   // ── Canvas Panning ─────────────────────────────────────────
@@ -443,6 +474,9 @@ export default function WorkflowCanvas({
       onMouseDown={handleCanvasMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
+      onDragEnter={(e) => e.preventDefault()}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
     >
       {/* Dot grid background */}
       <div

@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useMemo, useCallback } from "react";
+import React, { useState, useMemo, useCallback, useEffect } from "react";
+import { useUser } from "@/lib/context/user-context";
 import {
   Search, Filter, Plus, Download, ChevronDown, ChevronUp,
   Phone, Mail, MessageCircle, MoreHorizontal, Trash2,
@@ -90,6 +91,7 @@ interface Props {
 
 export default function LeadsCRM({ initialLeads }: Props) {
   const router = useRouter();
+  const { can } = useUser();
   const [leads, setLeads] = useState<EnrichedLead[]>(initialLeads);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<LeadStatus | "All">("All");
@@ -105,6 +107,10 @@ export default function LeadsCRM({ initialLeads }: Props) {
   const [bulkStatusValue, setBulkStatusValue] = useState<LeadStatus>("Contacted");
   const [page, setPage] = useState(1);
   const PAGE_SIZE = 25;
+
+  useEffect(() => {
+    setLeads(initialLeads);
+  }, [initialLeads]);
 
   // ── Derived Data ─────────────────────────────────────────────
   const filteredLeads = useMemo(() => {
@@ -285,13 +291,20 @@ export default function LeadsCRM({ initialLeads }: Props) {
             <Download className="w-4 h-4" />
             CRM Export
           </button>
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-white bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 transition-all shadow-sm shadow-indigo-500/20"
-          >
-            <Plus className="w-4 h-4" />
-            Add Lead
-          </button>
+          {/* Role-gated: only manager+ can add leads */}
+          {can.addLeads ? (
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-white bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 transition-all shadow-sm shadow-indigo-500/20"
+            >
+              <Plus className="w-4 h-4" />
+              Add Lead
+            </button>
+          ) : (
+            <div className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20">
+              <span>👁</span> View Only
+            </div>
+          )}
         </div>
       </div>
 
@@ -380,31 +393,39 @@ export default function LeadsCRM({ initialLeads }: Props) {
             {selectedPhones.size} selected
           </span>
           <div className="h-4 w-px bg-[#2f81f7]/20" />
-          <div className="flex items-center gap-2">
-            <select
-              value={bulkStatusValue}
-              onChange={(e) => setBulkStatusValue(e.target.value as LeadStatus)}
-              className="px-2 py-1 text-xs rounded-md border border-[#2f81f7]/30 bg-white dark:bg-[#161b22] text-gray-700 dark:text-[#c9d1d9] cursor-pointer"
-            >
-              {ALL_STATUSES.map((s) => (
-                <option key={s} value={s}>{s}</option>
-              ))}
-            </select>
-            <button
-              onClick={handleBulkStatusUpdate}
-              className="px-3 py-1 text-xs font-medium rounded-md bg-[#2f81f7] text-white hover:bg-[#2672d9] transition-colors"
-            >
-              Update Status
-            </button>
-          </div>
-          <div className="h-4 w-px bg-[#2f81f7]/20" />
-          <button
-            onClick={handleBulkDelete}
-            className="px-3 py-1 text-xs font-medium rounded-md text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
-          >
-            <Trash2 className="w-3 h-3 inline mr-1" />
-            Delete
-          </button>
+          {/* Status update — manager+ only */}
+          {can.editLeads && (
+            <div className="flex items-center gap-2">
+              <select
+                value={bulkStatusValue}
+                onChange={(e) => setBulkStatusValue(e.target.value as LeadStatus)}
+                className="px-2 py-1 text-xs rounded-md border border-[#2f81f7]/30 bg-white dark:bg-[#161b22] text-gray-700 dark:text-[#c9d1d9] cursor-pointer"
+              >
+                {ALL_STATUSES.map((s) => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+              <button
+                onClick={handleBulkStatusUpdate}
+                className="px-3 py-1 text-xs font-medium rounded-md bg-[#2f81f7] text-white hover:bg-[#2672d9] transition-colors"
+              >
+                Update Status
+              </button>
+            </div>
+          )}
+          {/* Delete — admin+ only */}
+          {can.deleteLeads && (
+            <>
+              <div className="h-4 w-px bg-[#2f81f7]/20" />
+              <button
+                onClick={handleBulkDelete}
+                className="px-3 py-1 text-xs font-medium rounded-md text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
+              >
+                <Trash2 className="w-3 h-3 inline mr-1" />
+                Delete
+              </button>
+            </>
+          )}
           <button
             onClick={() => setSelectedPhones(new Set())}
             className="ml-auto text-xs text-gray-500 dark:text-[#6e7681] hover:text-gray-700 dark:hover:text-[#8b949e]"

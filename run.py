@@ -237,7 +237,7 @@ def main():
         env["PYTHONIOENCODING"] = "utf-8"
 
         proc = subprocess.Popen(
-            [sys.executable, script, mode],
+            [sys.executable, "-u", script, mode],
             cwd=str(cwd),
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,

@@ -58,11 +58,26 @@ export async function GET(req: NextRequest) {
   const sampleText = SAMPLE_TEXTS[language] ?? SAMPLE_TEXTS.default;
   const env = loadRootEnv();
 
+  // ── Valid Sarvam bulbul:v3 speakers (server-side guard) ─────────────────────
+  const VALID_SARVAM_VOICES = new Set([
+    "aditya","ritu","ashutosh","priya","neha","rahul","pooja","rohan","simran",
+    "kavya","amit","dev","ishita","shreya","ratan","varun","manan","sumit",
+    "roopa","kabir","aayan","shubh","advait","anand","tanya","tarun","sunny",
+    "mani","gokul","vijay","shruti","suhani","mohit","kavitha","rehan","soham",
+    "rupali","niharika",
+  ]);
+
   try {
     // ── Sarvam ────────────────────────────────────────────────────────────────
     if (provider === "sarvam") {
       const apiKey = env.SARVAM_API_KEY || process.env.SARVAM_API_KEY || "";
       if (!apiKey) return NextResponse.json({ error: "SARVAM_API_KEY not configured" }, { status: 400 });
+
+      // Guard: fall back to 'ishita' if stored voice is stale/invalid
+      const safeVoice = voice && VALID_SARVAM_VOICES.has(voice.toLowerCase()) ? voice.toLowerCase() : "ishita";
+      if (safeVoice !== voice) {
+        console.warn(`[voice-preview] Invalid Sarvam speaker '${voice}', using '${safeVoice}'`);
+      }
 
       const res = await fetch("https://api.sarvam.ai/text-to-speech", {
         method: "POST",
@@ -73,7 +88,7 @@ export async function GET(req: NextRequest) {
         body: JSON.stringify({
           inputs: [sampleText],
           target_language_code: language || "en-IN",
-          speaker: voice || "ishita",
+          speaker: safeVoice,
           model: model || "bulbul:v3",
           // Note: pitch, loudness, pace are NOT supported by bulbul:v3
           enable_preprocessing: false,

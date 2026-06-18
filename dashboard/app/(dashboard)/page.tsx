@@ -1,4 +1,5 @@
 import { getOverviewStats } from "@/lib/actions";
+export const dynamic = "force-dynamic";
 import { Phone, CheckCircle, Hash, TrendingUp, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import GlobeWrapper from "@/components/GlobeWrapper";
@@ -22,7 +23,7 @@ export default async function Overview() {
     {
       label: "Calls Made",
       value: stats.totalCalls,
-      change: "+100.0%",
+      change: stats.changes.totalCalls,
       iconBg: "bg-amber-50 dark:bg-[#1A1510] border border-amber-500/20",
       iconColor: "text-amber-500",
       icon: Phone,
@@ -31,7 +32,7 @@ export default async function Overview() {
     {
       label: "Total Spend",
       value: <FormattedCurrency value={stats.totalCost} />,
-      change: "+100.0%",
+      change: stats.changes.totalCost,
       iconBg: "bg-blue-50 dark:bg-[#101525] border border-blue-500/20",
       iconColor: "text-blue-500",
       icon: null,
@@ -41,7 +42,7 @@ export default async function Overview() {
     {
       label: "Call Pickup Rate",
       value: `${stats.pickupRate}%`,
-      change: "+100.0%",
+      change: stats.changes.pickupRate,
       iconBg: "dark:bg-[#101F1A] border border-emerald-500/20",
       iconColor: "text-emerald-500",
       icon: CheckCircle,
@@ -51,7 +52,7 @@ export default async function Overview() {
     {
       label: "SIP Trunk Calls",
       value: stats.sipTrunkCalls,
-      change: "+100.0%",
+      change: stats.changes.sipTrunkCalls,
       iconBg: "bg-blue-50 dark:bg-[#101525] border border-blue-500/20",
       iconColor: "text-blue-500",
       icon: Phone,
@@ -61,7 +62,7 @@ export default async function Overview() {
     {
       label: "Voice API Calls",
       value: stats.voiceApiCalls,
-      change: null,
+      change: stats.changes.voiceApiCalls,
       iconBg: "bg-orange-50 dark:bg-[#1A1510] border border-orange-500/20",
       iconColor: "text-orange-500",
       icon: Phone,
@@ -71,7 +72,7 @@ export default async function Overview() {
     {
       label: "Active Numbers",
       value: stats.activeNumbers,
-      change: null,
+      change: stats.changes.activeNumbers,
       iconBg: "bg-violet-50 dark:bg-[#151020] border border-violet-500/20",
       iconColor: "text-violet-500",
       icon: Hash,
@@ -117,8 +118,8 @@ export default async function Overview() {
 
               <div className="flex justify-between items-end mt-3" style={{ transform: "translateZ(30px)" }}>
                 {card.change ? (
-                  <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold flex items-center">
-                    <TrendingUp className="w-3 h-3 mr-1" />
+                  <p className={`text-[10px] ${card.change && card.change.startsWith('-') ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'} font-bold flex items-center`}>
+                    <TrendingUp className={`w-3 h-3 mr-1 ${card.change && card.change.startsWith('-') ? 'rotate-180' : ''}`} />
                     {card.change}
                     <span className="text-gray-400 dark:text-gray-500 ml-1 font-medium">
                       vs previous period

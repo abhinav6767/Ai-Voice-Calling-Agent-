@@ -14,13 +14,13 @@ export default function TopHeader() {
 
   return (
     <AnimatePresence>
-      {!isSidebarCollapsed && !isBuilder && (
+      {!isBuilder && (
         <motion.header 
           initial={{ height: 0, opacity: 0 }}
           animate={{ height: "5rem", opacity: 1 }}
           exit={{ height: 0, opacity: 0 }}
           transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
-          className="flex items-center justify-between px-8 pt-6 pb-2 sticky top-0 z-10 overflow-hidden shrink-0 bg-white/80 dark:bg-[#111111]/80 backdrop-blur-xl"
+          className="flex items-center justify-between px-8 pt-6 pb-2 sticky top-0 z-50 shrink-0 bg-white/80 dark:bg-[#111111]/80 backdrop-blur-xl"
         >
           <div className="flex-1">
             <h1 className="text-[28px] font-bold tracking-tight text-gray-900 dark:text-white capitalize">
@@ -49,8 +49,7 @@ export default function TopHeader() {
             <div className="w-px h-6 bg-gray-200 dark:bg-gray-800 mx-2"></div>
 
             <div className="flex items-center gap-3">
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">My profile</span>
-              <img src="https://i.pravatar.cc/150?img=47" alt="Profile" className="w-9 h-9 rounded-full border border-gray-200 dark:border-gray-800 object-cover" />
+              <ProfileMenu />
             </div>
           </div>
         </motion.header>

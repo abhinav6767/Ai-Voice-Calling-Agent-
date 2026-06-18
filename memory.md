@@ -85,6 +85,21 @@
 
 ## 🪵 Immutable Change Log
 
+### [2026-06-18] - Workflow Canvas Infinite Panning Fix
+* **Context:** Dragging nodes toward the left or top of the canvas triggered an invisible bounding box, causing nodes to snap back to 0 or -500. This restricted the user's ability to build complex, sprawling workflows.
+* **Scope:**
+  - `dashboard/components/workflows/WorkflowCanvas.tsx` — Removed `Math.max` constraints on node movement, allowing true infinite canvas freedom in all directions. Added `onDragEnter={(e) => e.preventDefault()}` to the canvas element to ensure reliable drop-target activation for nodes originating from the palette.
+* **Impact:** Users can now drag nodes anywhere on the infinite canvas without encountering invisible walls. The drag-and-drop experience from the palette is more reliable.
+
+### [2026-06-17] - Complete Next.js App Router Restructuring & Supabase Auth Implementation
+* **Context:** The application needed a robust authentication system and secure routing to protect dashboard features while exposing public login paths. We also needed a scalable database solution (Supabase) to replace the local JSON/CSV file data structures.
+* **Scope:**
+  - **Routing Restructuring:** Moved all protected dashboard pages (`config/inbound`, `config/outbound`, `dialer`, `integrations`, `leads`, `logs`, `wallet`, `workflows`) inside a new `dashboard/app/(dashboard)/` route group.
+  - **Authentication:** Created new `dashboard/app/auth/` and `dashboard/app/login/` routes for Supabase authentication. Added `dashboard/middleware.ts` to protect all `(dashboard)` routes and redirect unauthenticated users to `/login`.
+  - **Database & Architecture:** Initialized Supabase schema with migrations (`supabase/`) and Role-Level Security (RLS) policies. Implemented server actions in `dashboard/lib/supabase/`.
+  - **UI Integration:** Updated `Sidebar.tsx`, `TopHeader.tsx`, `LeadsCRM.tsx`, and `ProfileMenu.tsx` to integrate with the new Supabase Auth context and user profiles.
+* **Impact:** The application now has a secure, production-ready authentication flow and database infrastructure. All dashboard routes are protected, and the groundwork is laid for multi-tenant, role-based access control.
+
 ### [2026-06-15] - Dashboard Animation and Layout Thrashing Optimizations
 * **Context:** User requested optimizations to make all animations in the project feel smoother, faster, and lag-free without stuttering.
 * **Scope:**

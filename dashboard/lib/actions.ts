@@ -4,6 +4,7 @@ import fs from "fs";
 import path from "path";
 
 import { analyzeTranscript } from "./groq-analyzer";
+import { revalidatePath } from "next/cache";
 
 // Define paths relative to the root project (one level up from dashboard)
 const DATA_DIR = path.join(process.cwd(), "..", "data");
@@ -457,6 +458,53 @@ export async function getOverviewStats() {
         .map((l: any) => l.phone_number)
   ).size || 1; // Fallback to 1 if no inbound calls yet
   
+  // Calculate dynamic changes
+  const now = new Date();
+  const thirtyDaysAgo = new Date(now);
+  thirtyDaysAgo.setDate(now.getDate() - 30);
+  const sixtyDaysAgo = new Date(now);
+  sixtyDaysAgo.setDate(now.getDate() - 60);
+
+  const current30DaysLogs = logs.filter((l: any) => new Date(l.timestamp) >= thirtyDaysAgo);
+  const prev30DaysLogs = logs.filter((l: any) => {
+    const d = new Date(l.timestamp);
+    return d >= sixtyDaysAgo && d < thirtyDaysAgo;
+  });
+
+  const getChange = (curr: number, prev: number) => {
+    if (prev === 0) return curr > 0 ? "+100.0%" : null;
+    if (curr === prev) return null;
+    const pct = ((curr - prev) / prev) * 100;
+    return (pct > 0 ? "+" : "") + pct.toFixed(1) + "%";
+  };
+
+  const currCost = current30DaysLogs.reduce((acc: number, l: any) => acc + (typeof l.cost === 'number' ? l.cost : parseFloat((l.cost || '0').replace(/[^0-9.-]/g, '')) || 0), 0);
+  const prevCost = prev30DaysLogs.reduce((acc: number, l: any) => acc + (typeof l.cost === 'number' ? l.cost : parseFloat((l.cost || '0').replace(/[^0-9.-]/g, '')) || 0), 0);
+
+  const currAns = current30DaysLogs.filter((l: any) => l.duration > 0 || l.status === "NORMAL_CLEARING" || l.status === "Completed").length;
+  const prevAns = prev30DaysLogs.filter((l: any) => l.duration > 0 || l.status === "NORMAL_CLEARING" || l.status === "Completed").length;
+  const currPickup = current30DaysLogs.length > 0 ? (currAns / current30DaysLogs.length) * 100 : 0;
+  const prevPickup = prev30DaysLogs.length > 0 ? (prevAns / prev30DaysLogs.length) * 100 : 0;
+  const pickupChange = prevPickup === 0 ? (currPickup > 0 ? "+100.0%" : null) : ((currPickup - prevPickup > 0 ? "+" : "") + (currPickup - prevPickup).toFixed(1) + "%");
+
+  const currSip = current30DaysLogs.filter((l: any) => l.sip_call_id).length || current30DaysLogs.length;
+  const prevSip = prev30DaysLogs.filter((l: any) => l.sip_call_id).length || prev30DaysLogs.length;
+
+  const currApi = current30DaysLogs.length - currSip;
+  const prevApi = prev30DaysLogs.length - prevSip;
+
+  const currActive = new Set(current30DaysLogs.filter((l: any) => l.direction === "inbound" && l.phone_number).map((l: any) => l.phone_number)).size || 1;
+  const prevActive = new Set(prev30DaysLogs.filter((l: any) => l.direction === "inbound" && l.phone_number).map((l: any) => l.phone_number)).size || 1;
+
+  const changes = {
+    totalCalls: getChange(current30DaysLogs.length, prev30DaysLogs.length),
+    totalCost: getChange(currCost, prevCost),
+    pickupRate: pickupChange,
+    sipTrunkCalls: getChange(currSip, prevSip),
+    voiceApiCalls: getChange(currApi, prevApi),
+    activeNumbers: getChange(currActive, prevActive),
+  };
+
   return {
     totalCalls,
     totalLeads,
@@ -467,6 +515,7 @@ export async function getOverviewStats() {
     sipTrunkCalls,
     voiceApiCalls,
     activeNumbers,
+    changes,
     usageChartData,
     costChartData,
     inboundOutboundData,
@@ -843,6 +892,8 @@ export async function updateLeadMeta(
       lastActivity: new Date().toISOString(),
     };
     writeLeadsMeta(meta);
+    revalidatePath("/leads");
+    revalidatePath("/");
     return true;
   } catch (error) {
     console.error("Error updating lead meta:", error);
@@ -864,6 +915,8 @@ export async function addLeadNote(
     });
     meta[phone].lastActivity = new Date().toISOString();
     writeLeadsMeta(meta);
+    revalidatePath("/leads");
+    revalidatePath("/");
     return true;
   } catch (error) {
     console.error("Error adding lead note:", error);
@@ -916,6 +969,8 @@ export async function addNewLead(data: {
       lastActivity: timestamp,
     };
     writeLeadsMeta(meta);
+    revalidatePath("/leads");
+    revalidatePath("/");
     return true;
   } catch (error) {
     console.error("Error adding lead:", error);
@@ -939,6 +994,8 @@ export async function deleteLead(phone: string): Promise<boolean> {
     const meta = readLeadsMeta();
     delete meta[phone];
     writeLeadsMeta(meta);
+    revalidatePath("/leads");
+    revalidatePath("/");
     return true;
   } catch (error) {
     console.error("Error deleting lead:", error);
@@ -963,6 +1020,8 @@ export async function bulkUpdateLeads(
       meta[phone].lastActivity = new Date().toISOString();
     });
     writeLeadsMeta(meta);
+    revalidatePath("/leads");
+    revalidatePath("/");
     return true;
   } catch (error) {
     console.error("Error bulk updating leads:", error);
@@ -986,6 +1045,8 @@ export async function bulkDeleteLeads(phones: string[]): Promise<boolean> {
     const meta = readLeadsMeta();
     phones.forEach((phone) => delete meta[phone]);
     writeLeadsMeta(meta);
+    revalidatePath("/leads");
+    revalidatePath("/");
     return true;
   } catch (error) {
     console.error("Error bulk deleting leads:", error);
